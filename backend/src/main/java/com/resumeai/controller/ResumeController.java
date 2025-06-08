@@ -4,7 +4,7 @@ import com.resumeai.model.ResumeData;
 import com.resumeai.model.InterviewQuestion;
 import com.resumeai.model.JobMatchResult;
 import com.resumeai.service.DocumentParserService;
-import com.resumeai.service.GeminiService;
+import com.resumeai.service.GeminiClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +25,7 @@ public class ResumeController {
     private DocumentParserService documentParserService;
 
     @Autowired
-    private GeminiService geminiService;
+    private GeminiClient geminiService;
 
     @PostMapping("/upload")
     public ResponseEntity<?> uploadResume(@RequestParam("file") MultipartFile file) {
