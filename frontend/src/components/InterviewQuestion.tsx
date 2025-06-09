@@ -3,8 +3,10 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mic, Lightbulb, ArrowRight } from "lucide-react";
+import { Mic, MicOff, Lightbulb, ArrowRight, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import useSpeechRecognition from "@/hooks/useSpeechRecognition";
 
 interface InterviewQuestionProps {
   question: string;
@@ -26,7 +28,22 @@ const InterviewQuestion = ({
   const [timeSpent, setTimeSpent] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
   const [showHint, setShowHint] = useState(false);
-  const [recordingAudio, setRecordingAudio] = useState(false);
+
+  // Speech Recognition
+  const {
+    transcript,
+    interimTranscript,
+    isListening,
+    isSupported,
+    error: speechError,
+    startListening,
+    stopListening,
+    resetTranscript
+  } = useSpeechRecognition({
+    language: 'vi-VN',
+    continuous: true,
+    interimResults: true
+  });
 
   // Reset all state when question changes
   useEffect(() => {
@@ -35,8 +52,18 @@ const InterviewQuestion = ({
     setTimeSpent(0);
     setTimerRunning(false);
     setShowHint(false);
-    setRecordingAudio(false);
-  }, [question]);
+    resetTranscript();
+    if (isListening) {
+      stopListening();
+    }
+  }, [question, resetTranscript, isListening, stopListening]);
+
+  // Update answer when speech recognition provides new transcript
+  useEffect(() => {
+    if (transcript) {
+      setAnswer(transcript);
+    }
+  }, [transcript]);
 
   useEffect(() => {
     // Only start the timer if it hasn't been started yet
@@ -73,16 +100,18 @@ const InterviewQuestion = ({
   };
 
   const handleMicrophoneClick = () => {
-    // In a real implementation, we would use the Web Speech API
-    // For now, we'll just simulate speech recognition
-    setRecordingAudio(true);
-    toast.info("Đang ghi âm... (Tính năng mô phỏng)");
-    
-    setTimeout(() => {
-      setRecordingAudio(false);
-      setAnswer(prev => prev + " Văn bản được nhận diện từ giọng nói sẽ xuất hiện ở đây.");
-      toast.success("Đã nhận diện giọng nói");
-    }, 2000);
+    if (!isSupported) {
+      toast.error("Trình duyệt không hỗ trợ nhận diện giọng nói");
+      return;
+    }
+
+    if (isListening) {
+      stopListening();
+      toast.success("Đã dừng ghi âm");
+    } else {
+      startListening();
+      toast.info("Đang ghi âm... Hãy nói tiếng Việt");
+    }
   };
 
   const handleSubmit = () => {
@@ -118,9 +147,30 @@ const InterviewQuestion = ({
             <div>{hint}</div>
           </div>
         )}
+
+        {speechError && (
+          <Alert className="border-red-200 bg-red-50">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800">
+              {speechError}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {isListening && (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-sm">
+            <div className="font-medium mb-1 text-blue-800 flex items-center gap-2">
+              <Mic className="h-4 w-4 animate-pulse" />
+              Đang nghe...
+            </div>
+            {interimTranscript && (
+              <div className="text-gray-600 italic">"{interimTranscript}"</div>
+            )}
+          </div>
+        )}
         
         <Textarea
-          placeholder="Nhập câu trả lời của bạn ở đây..."
+          placeholder="Nhập câu trả lời của bạn ở đây hoặc sử dụng microphone..."
           className="min-h-[150px]"
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
@@ -132,9 +182,14 @@ const InterviewQuestion = ({
             variant="outline"
             size="icon"
             onClick={handleMicrophoneClick}
-            disabled={recordingAudio}
+            disabled={!isSupported}
+            className={isListening ? 'bg-red-50 border-red-200' : ''}
           >
-            <Mic className={`h-4 w-4 ${recordingAudio ? 'text-red-500 animate-pulse-light' : ''}`} />
+            {isListening ? (
+              <MicOff className="h-4 w-4 text-red-500" />
+            ) : (
+              <Mic className="h-4 w-4" />
+            )}
           </Button>
           
           <Button
