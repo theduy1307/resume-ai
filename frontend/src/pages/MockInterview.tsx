@@ -4,8 +4,8 @@ import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Header from "@/components/Header";
 import InterviewQuestion from "@/components/InterviewQuestion";
-import JobSelectionScreen from "@/components/JobSelectionScreen";
-import { geminiApi } from "@/services/geminiApi";
+import InterviewSetupForm from "@/components/InterviewSetupForm";
+import { geminiApi, generateInterviewQuestionsFromBackend } from "@/services/geminiApi";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Clock, Home, RotateCcw } from "lucide-react";
@@ -34,8 +34,8 @@ const MockInterview = () => {
   const [answerResults, setAnswerResults] = useState<AnswerResult[]>([]);
   const [totalTime, setTotalTime] = useState(0);
   const [hasResume, setHasResume] = useState(false);
-  const [showJobSelection, setShowJobSelection] = useState(false);
-  const [selectedJobType, setSelectedJobType] = useState("");
+  const [showInterviewSetup, setShowInterviewSetup] = useState(false);
+  const [interviewInfo, setInterviewInfo] = useState<{position: string; field: string; level: string} | null>(null);
 
   useEffect(() => {
     // Check if resume data exists in localStorage
@@ -47,8 +47,8 @@ const MockInterview = () => {
       // If resume exists, fetch questions based on resume
       fetchQuestionsFromResume();
     } else {
-      // If no resume, show job selection
-      setShowJobSelection(true);
+      // If no resume, show interview setup
+      setShowInterviewSetup(true);
     }
   }, []);
 
@@ -65,12 +65,12 @@ const MockInterview = () => {
     }
   };
 
-  const fetchQuestionsFromJobType = async (jobType: string) => {
+  const fetchQuestionsFromInterviewInfo = async (info: {position: string; field: string; level: string}) => {
     setIsLoading(true);
     try {
-      const fetchedQuestions = await geminiApi.getInterviewQuestions(jobType);
+      const fetchedQuestions = await generateInterviewQuestionsFromBackend(info.position, info.field, info.level);
       setQuestions(fetchedQuestions);
-      setShowJobSelection(false);
+      setShowInterviewSetup(false);
       setIsLoading(false);
     } catch (error) {
       console.error("Error fetching questions:", error);
@@ -79,9 +79,9 @@ const MockInterview = () => {
     }
   };
 
-  const handleJobSelect = (jobType: string) => {
-    setSelectedJobType(jobType);
-    fetchQuestionsFromJobType(jobType);
+  const handleInterviewSetup = (info: {position: string; field: string; level: string}) => {
+    setInterviewInfo(info);
+    fetchQuestionsFromInterviewInfo(info);
   };
 
   const startInterview = () => {
@@ -153,14 +153,14 @@ const MockInterview = () => {
           <h1 className="text-3xl font-bold">Phỏng vấn thử</h1>
         </div>
         
-        {showJobSelection ? (
-          <JobSelectionScreen onJobSelect={handleJobSelect} />
+        {showInterviewSetup ? (
+          <InterviewSetupForm onSubmit={handleInterviewSetup} />
         ) : isLoading ? (
           <div className="py-20 text-center">
             <div className="mb-4 text-lg font-medium">
-              {hasResume 
-                ? "Đang chuẩn bị câu hỏi phỏng vấn dựa trên CV của bạn..." 
-                : `Đang chuẩn bị câu hỏi phỏng vấn cho ngành ${selectedJobType}...`
+              {hasResume
+                ? "Đang chuẩn bị câu hỏi phỏng vấn dựa trên CV của bạn..."
+                : `Đang chuẩn bị câu hỏi phỏng vấn cho vị trí ${interviewInfo?.position}...`
               }
             </div>
             <Progress value={70} className="w-full max-w-md mx-auto" />
@@ -171,11 +171,11 @@ const MockInterview = () => {
               <div className="max-w-3xl mx-auto text-center py-12">
                 <h2 className="text-2xl font-bold mb-4">Sẵn sàng cho phỏng vấn?</h2>
                 <p className="text-lg text-muted-foreground mb-8">
-                  Chúng tôi đã chuẩn bị {questions.length} câu hỏi phỏng vấn 
-                  {hasResume 
-                    ? " phù hợp với hồ sơ của bạn" 
-                    : ` cho ngành ${selectedJobType}`
-                  }. 
+                  Chúng tôi đã chuẩn bị {questions.length} câu hỏi phỏng vấn
+                  {hasResume
+                    ? " phù hợp với hồ sơ của bạn"
+                    : ` cho vị trí ${interviewInfo?.position} trong lĩnh vực ${interviewInfo?.field}`
+                  }.
                   Mỗi câu trả lời sẽ được đánh giá và bạn sẽ nhận được phản hồi chi tiết.
                 </p>
                 
@@ -201,12 +201,12 @@ const MockInterview = () => {
                 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   {!hasResume && (
-                    <Button 
-                      onClick={() => setShowJobSelection(true)} 
+                    <Button
+                      onClick={() => setShowInterviewSetup(true)}
                       variant="outline"
                       size="lg"
                     >
-                      Chọn ngành khác
+                      Thay đổi thông tin
                     </Button>
                   )}
                   <Button onClick={startInterview} size="lg" className="gap-2">

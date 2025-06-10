@@ -197,3 +197,29 @@ export const geminiApi = {
     };
   }
 };
+
+// New function to generate interview questions from backend
+export const generateInterviewQuestionsFromBackend = async (position: string, field: string, level: string) => {
+  const response = await fetch(`${API_BASE_URL}/mock-interview/questions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      position,
+      field,
+      level
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Lỗi tạo câu hỏi phỏng vấn');
+  }
+
+  const result = await response.json();
+  return result.map((q: any) => ({
+    question: q.questionText,
+    hint: q.hint
+  }));
+};
