@@ -35,7 +35,7 @@ const Header = () => {
   };
   
   return (
-    <header className="w-full py-4 px-6 flex items-center justify-between border-b">
+    <header className="fixed top-0 left-0 right-0 z-50 w-full py-4 px-6 flex items-center justify-between border-b bg-white/95 backdrop-blur-sm">
       <div 
         className="flex items-center gap-2 cursor-pointer" 
         onClick={() => navigate("/")}

@@ -162,7 +162,7 @@ const Upload = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       
-      <main className="flex-1 container max-w-5xl mx-auto px-4 py-8">
+      <main className="flex-1 container max-w-5xl mx-auto px-4 py-8 pt-24">
         <h1 className="text-3xl font-bold mb-8 text-center">Tải lên hồ sơ của bạn</h1>
         
         <div className="grid md:grid-cols-2 gap-8 mb-8">
