@@ -169,7 +169,7 @@ const useSpeechRecognition = (
   };
 
   return {
-    transcript: transcript + interimTranscript,
+    transcript: finalTranscript, // Chỉ trả về final transcript để tránh conflict
     interimTranscript,
     finalTranscript,
     isListening,

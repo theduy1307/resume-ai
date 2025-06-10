@@ -67,7 +67,7 @@ const Evaluation = () => {
   return <div className="min-h-screen flex flex-col">
       <Header />
       
-      <main className="flex-1 container max-w-7xl mx-auto px-4 py-8">
+      <main className="flex-1 container max-w-7xl mx-auto px-4 py-8 pt-24">
         <div className="flex items-center mb-8 gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/upload")}>
             <ArrowLeft className="h-5 w-5" />

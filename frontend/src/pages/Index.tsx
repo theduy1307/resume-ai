@@ -11,7 +11,7 @@ const Index = () => {
   return <div className="min-h-screen flex flex-col">
       <Header />
       
-      <main className="flex-1 container max-w-7xl mx-auto px-4 py-8">
+      <main className="flex-1 container max-w-7xl mx-auto px-4 py-8 pt-24">
         <section className="py-12 md:py-24 lg:py-32 flex flex-col items-center text-center">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">
             Cải thiện hồ sơ xin việc với

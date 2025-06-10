@@ -52,39 +52,53 @@ const InterviewQuestion = ({
     setTimeSpent(0);
     setTimerRunning(false);
     setShowHint(false);
-    resetTranscript();
+
+    // Stop listening and reset transcript
     if (isListening) {
       stopListening();
     }
-  }, [question, resetTranscript, isListening, stopListening]);
+    resetTranscript();
+  }, [question]); // Simplified dependencies
 
   // Update answer when speech recognition provides new transcript
   useEffect(() => {
-    if (transcript) {
-      setAnswer(transcript);
+    if (transcript && transcript.trim()) {
+      setAnswer(prev => {
+        // Nếu đang ghi âm, thay thế toàn bộ nội dung
+        // Nếu không, thêm vào cuối
+        if (isListening) {
+          return transcript;
+        } else {
+          // Chỉ thêm nếu transcript mới khác với phần cuối của answer hiện tại
+          if (!prev.includes(transcript)) {
+            return prev ? prev + ' ' + transcript : transcript;
+          }
+          return prev;
+        }
+      });
     }
-  }, [transcript]);
+  }, [transcript, isListening]);
 
   useEffect(() => {
-    // Only start the timer if it hasn't been started yet
-    if (!startTime) {
-      const timerDelay = setTimeout(() => {
-        setStartTime(Date.now());
-        setTimerRunning(true);
-      }, 3000);
-      
-      return () => {
-        clearTimeout(timerDelay);
-      };
-    }
-  }, [startTime]);
+    // Start timer after 3 seconds delay when question changes
+    const timerDelay = setTimeout(() => {
+      setStartTime(Date.now());
+      setTimerRunning(true);
+    }, 3000);
+
+    return () => {
+      clearTimeout(timerDelay);
+    };
+  }, [question]); // Dependency on question to restart timer for each new question
 
   useEffect(() => {
     let interval: number;
 
     if (timerRunning && startTime) {
       interval = window.setInterval(() => {
-        setTimeSpent(Math.floor((Date.now() - startTime) / 1000));
+        const currentTime = Date.now();
+        const elapsed = Math.floor((currentTime - startTime) / 1000);
+        setTimeSpent(elapsed);
       }, 1000);
     }
 
@@ -109,6 +123,8 @@ const InterviewQuestion = ({
       stopListening();
       toast.success("Đã dừng ghi âm");
     } else {
+      // Reset transcript trước khi bắt đầu ghi âm mới
+      resetTranscript();
       startListening();
       toast.info("Đang ghi âm... Hãy nói tiếng Việt");
     }
@@ -141,10 +157,12 @@ const InterviewQuestion = ({
           {question}
         </div>
         
-        {showHint && hint && (
-          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm animate-fade-in">
-            <div className="font-medium mb-1 text-yellow-800">Gợi ý:</div>
-            <div>{hint}</div>
+        {showHint && (
+          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md text-sm transition-all duration-300">
+            <div className="font-medium mb-1 text-yellow-800">💡 Gợi ý:</div>
+            <div className="text-yellow-700">
+              {hint || "Hãy trả lời một cách tự tin và cụ thể. Sử dụng ví dụ thực tế để minh họa cho câu trả lời của bạn."}
+            </div>
           </div>
         )}
 

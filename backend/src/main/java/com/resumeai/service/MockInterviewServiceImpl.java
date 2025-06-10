@@ -147,24 +147,34 @@ public class MockInterviewServiceImpl implements MockInterviewService {
     }
 
     private String buildQuestionGenerationPrompt(InterviewRequestDTO request) {
-        return "Bạn là một chuyên gia tuyển dụng và phỏng vấn. " +
-                "Hãy tạo 10 câu hỏi phỏng vấn phù hợp cho ứng viên với thông tin sau:\n\n" +
-                "- Vị trí ứng tuyển: " + request.getPosition() + "\n" +
-                "- Lĩnh vực công việc: " + request.getField() + "\n" +
-                "- Cấp độ kinh nghiệm: " + request.getLevel() + "\n\n" +
-                "Yêu cầu:\n" +
-                "1. Tạo mix các loại câu hỏi: Technical (40%), Behavioral (40%), Situational (20%)\n" +
-                "2. Câu hỏi phù hợp với level kinh nghiệm được chỉ định\n" +
-                "3. Câu hỏi bằng tiếng Việt, rõ ràng và dễ hiểu\n" +
-                "4. Mỗi câu hỏi cần có hint (gợi ý trả lời) ngắn gọn\n\n" +
-                "Hãy trả về kết quả theo định dạng JSON array như mẫu sau:\n" +
-                "[\n" +
-                "  {\n" +
-                "    \"questionId\": 1,\n" +
-                "    \"questionText\": \"Câu hỏi phỏng vấn...\",\n" +
-                "    \"hint\": \"Gợi ý trả lời...\"\n" +
-                "  }\n" +
-                "]\n";
+        // Prompt này giữ nguyên logic tư duy nâng cao nhưng tuân thủ nghiêm ngặt định dạng output gốc.
+        return String.format(
+                "Bạn là một chuyên gia tuyển dụng và phỏng vấn kỹ thuật hàng đầu, có kinh nghiệm sâu sắc về các tiêu chuẩn nhân sự trong ngành. " +
+                        "Mục tiêu chính của bạn là tạo ra một bộ 10 câu hỏi phỏng vấn để đánh giá chính xác năng lực của một ứng viên so với **mặt bằng chung của thị trường** cho vị trí và cấp độ được chỉ định.\n\n" +
+                        "**THÔNG TIN ỨNG VIÊN:**\n\n" +
+                        "- Vị trí ứng tuyển: %s\n" +
+                        "- Lĩnh vực công việc: %s\n" +
+                        "- Cấp độ kinh nghiệm: %s\n\n" +
+                        "**YÊU CẦU CHI TIẾT:**\n\n" +
+                        "1.  **Suy luận kỳ vọng thị trường:** Dựa vào 3 thông tin trên, hãy tự suy luận ra những trách nhiệm, công nghệ cốt lõi và thách thức phổ biến mà một người ở vai trò này thường gặp phải trên thị trường. Câu hỏi của bạn phải dựa trên những suy luận này.\n\n" +
+                        "2.  **Mục tiêu cốt lõi:** Các câu hỏi phải giúp phân biệt được một ứng viên 'đạt yêu cầu' và một ứng viên 'xuất sắc' cho cấp độ %s. Hãy tập trung vào việc kiểm tra chiều sâu kiến thức và kinh nghiệm thực tiễn.\n\n" +
+                        "3.  **Kết hợp câu hỏi (Tỷ lệ gợi ý: 40%% Technical, 40%% Behavioral, 20%% Situational):** Hãy ngầm hiểu và tạo ra sự đa dạng này mà không cần nêu rõ loại câu hỏi trong output. Tập trung vào việc tạo ra câu hỏi thực tế, đánh giá đúng năng lực.\n\n" +
+                        "4.  **Gợi ý trả lời (Hint):** Hint không được tiết lộ đáp án. Thay vào đó, hãy gợi ý cho ứng viên về *cách tiếp cận vấn đề* hoặc *cấu trúc một câu trả lời tốt* (ví dụ: 'Hãy trình bày theo mô hình STAR' hoặc 'Hãy cân nhắc các yếu tố về hiệu năng và khả năng mở rộng').\n\n" +
+                        "5.  **Ngôn ngữ:** Câu hỏi bằng tiếng Việt, chuyên nghiệp, rõ ràng.\n\n" +
+                        "**ĐỊNH DẠNG ĐẦU RA:**\n\n" +
+                        "Hãy trả về kết quả theo định dạng JSON array như mẫu sau. **Tuyệt đối không thêm bất kỳ trường nào khác ngoài `questionId`, `questionText`, và `hint`.**\n" +
+                        "[\n" +
+                        "  {\n" +
+                        "    \"questionId\": 1,\n" +
+                        "    \"questionText\": \"Câu hỏi phỏng vấn...\",\n" +
+                        "    \"hint\": \"Gợi ý trả lời...\"\n" +
+                        "  }\n" +
+                        "]\n",
+                request.getPosition(),
+                request.getField(),
+                request.getLevel(),
+                request.getLevel()
+        );
     }
 
 
@@ -177,31 +187,48 @@ public class MockInterviewServiceImpl implements MockInterviewService {
                         answer.getAnswerText()))
                 .collect(Collectors.joining("\n\n"));
 
-        return "Bạn là một chuyên gia phỏng vấn. Hãy chấm điểm các câu trả lời phỏng vấn của ứng viên dựa trên thông tin sau:\n\n" +
-                "Thông tin ứng viên:\n" +
-                "- Vị trí ứng tuyển: " + submission.getPosition() + "\n" +
-                "- Lĩnh vực công việc: " + submission.getField() + "\n" +
-                "- Cấp độ kinh nghiệm: " + submission.getLevel() + "\n\n" +
-                "Danh sách câu hỏi và câu trả lời:\n" + answersText + "\n\n" +
-                "Yêu cầu:\n" +
-                "1. Chấm điểm từng câu trả lời trên thang điểm 0-100 dựa trên tính chính xác, rõ ràng và phù hợp với vị trí, lĩnh vực và cấp độ kinh nghiệm.\n" +
-                "2. Cung cấp phản hồi cụ thể (feedback) cho từng câu trả lời, giải thích điểm mạnh và điểm cần cải thiện.\n" +
-                "3. Tính tổng điểm (totalScore) bằng cách lấy trung bình điểm của các câu trả lời (làm tròn đến số nguyên).\n" +
-                "4. Đưa ra nhận xét tổng quan (generalFeedback) về màn thể hiện của ứng viên.\n" +
-                "5. Đưa ra gợi ý cải thiện (improvementSuggestions) để ứng viên làm tốt hơn.\n" +
-                "6. Kết quả trả về bằng tiếng Việt, rõ ràng và dễ hiểu.\n\n" +
-                "Hãy trả về kết quả theo định dạng JSON như mẫu sau:\n" +
-                "{\n" +
-                "  \"totalScore\": 85,\n" +
-                "  \"questionScores\": [\n" +
-                "    {\n" +
-                "      \"questionId\": 1,\n" +
-                "      \"score\": 80,\n" +
-                "      \"feedback\": \"Câu trả lời tốt, nhưng cần chi tiết hơn về...\"\n" +
-                "    }\n" +
-                "  ],\n" +
-                "  \"generalFeedback\": \"Ứng viên thể hiện tốt, nhưng cần cải thiện...\",\n" +
-                "  \"improvementSuggestions\": \"Tập trung vào việc cung cấp ví dụ cụ thể hơn...\"\n" +
-                "}\n";
+        return """
+                Bạn là một chuyên gia phỏng vấn có kinh nghiệm thực tế tuyển dụng nhân sự. Hãy đóng vai trò là nhà tuyển dụng đang đánh giá ứng viên cho vị trí "%s" trong lĩnh vực "%s" với cấp độ kinh nghiệm "%s".
+            
+                Nhiệm vụ của bạn là chấm điểm và phản hồi các câu trả lời phỏng vấn như sau:
+            
+                1. Đối với mỗi câu trả lời:
+                   - Nếu là câu hỏi hành vi (behavioral), hãy đánh giá dựa theo mô hình STAR: ứng viên có mô tả rõ tình huống (Situation), nhiệm vụ (Task), hành động (Action), và kết quả (Result) hay không.
+                   - Nếu là câu hỏi chuyên môn (technical), hãy đánh giá theo độ chính xác, chiều sâu, tính logic và khả năng áp dụng thực tế.
+                   - Chấm điểm mỗi câu từ 0 đến 100.
+                   - Viết phần nhận xét `feedback` tổng hợp: nêu rõ điểm mạnh, điểm yếu và cách cải thiện cho câu trả lời đó.
+            
+                2. Sau khi đánh giá tất cả các câu hỏi:
+                   - Tính `totalScore` là trung bình cộng của điểm các câu (làm tròn đến số nguyên).
+                   - Viết nhận xét chung `generalFeedback` về màn thể hiện tổng thể của ứng viên.
+                   - Gợi ý cải thiện `improvementSuggestions` để giúp ứng viên thể hiện tốt hơn trong các buổi phỏng vấn sau.
+            
+                3. Kết quả trả về phải có định dạng JSON như sau (không thêm bớt trường):
+            
+                {
+                  "totalScore": 85,
+                  "questionScores": [
+                    {
+                      "questionId": 1,
+                      "score": 80,
+                      "feedback": "Câu trả lời tốt, trình bày mạch lạc, tuy nhiên cần bổ sung ví dụ minh họa rõ hơn để làm nổi bật kết quả đạt được."
+                    }
+                  ],
+                  "generalFeedback": "Ứng viên thể hiện khá tốt, có tư duy rõ ràng, nhưng nên bổ sung thêm dẫn chứng cụ thể.",
+                  "improvementSuggestions": "Nên luyện cách trả lời theo STAR và chuẩn bị ví dụ minh họa rõ ràng hơn cho các câu hỏi."
+                }
+            
+                Tất cả phản hồi phải viết bằng tiếng Việt, dễ hiểu và chuyên nghiệp.
+            
+                Danh sách câu hỏi và câu trả lời:
+                %s
+                """
+                .formatted(
+                submission.getPosition(),
+                submission.getField(),
+                submission.getLevel(),
+                answersText
+        );
     }
+
 }
