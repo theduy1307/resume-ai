@@ -15,10 +15,10 @@ import java.util.List;
 
 @Service
 public class GeminiClient {
-    @Value("${gemini.api.key")
+    @Value("${gemini.api.key}")
     private String apiKey;
 
-    @Value("${gemini.api.model")
+    @Value("${gemini.api.model}")
     private String modelName;
 
     private final Gson gson = new Gson();

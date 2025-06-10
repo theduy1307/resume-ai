@@ -148,7 +148,7 @@ public class MockInterviewServiceImpl implements MockInterviewService {
 
     private String buildQuestionGenerationPrompt(InterviewRequestDTO request) {
         return "Bạn là một chuyên gia tuyển dụng và phỏng vấn. " +
-                "Hãy tạo 5 câu hỏi phỏng vấn phù hợp cho ứng viên với thông tin sau:\n\n" +
+                "Hãy tạo 10 câu hỏi phỏng vấn phù hợp cho ứng viên với thông tin sau:\n\n" +
                 "- Vị trí ứng tuyển: " + request.getPosition() + "\n" +
                 "- Lĩnh vực công việc: " + request.getField() + "\n" +
                 "- Cấp độ kinh nghiệm: " + request.getLevel() + "\n\n" +
@@ -166,6 +166,7 @@ public class MockInterviewServiceImpl implements MockInterviewService {
                 "  }\n" +
                 "]\n";
     }
+
 
     private String buildGradingPrompt(AnswerSubmitDTO submission) {
         String answersText = submission.getAnswers().stream()
