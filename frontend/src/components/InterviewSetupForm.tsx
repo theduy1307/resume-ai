@@ -12,7 +12,9 @@ interface InterviewSetupFormProps {
 
 const InterviewSetupForm = ({ onSubmit }: InterviewSetupFormProps) => {
   const [position, setPosition] = useState("");
+  const [customPosition, setCustomPosition] = useState("");
   const [field, setField] = useState("");
+  const [customField, setCustomField] = useState("");
   const [level, setLevel] = useState("");
 
   const predefinedPositions = [
@@ -60,19 +62,24 @@ const InterviewSetupForm = ({ onSubmit }: InterviewSetupFormProps) => {
   ];
 
   const handleSubmit = () => {
-    if (position.trim() && field.trim() && level.trim()) {
+    const finalPosition = position.trim() || customPosition.trim();
+    const finalField = field.trim() || customField.trim();
+
+    if (finalPosition && finalField && level.trim()) {
       onSubmit({
-        position: position.trim(),
-        field: field.trim(),
+        position: finalPosition,
+        field: finalField,
         level: level.trim()
       });
     }
   };
 
-  const isFormValid = position.trim() && field.trim() && level.trim();
+  const isFormValid = (position.trim() || customPosition.trim()) &&
+                     (field.trim() || customField.trim()) &&
+                     level.trim();
 
   return (
-    <div className="max-w-4xl mx-auto py-8">
+    <div className="max-w-7xl mx-auto py-8">
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold mb-4">Thiết lập thông tin phỏng vấn</h2>
         <p className="text-lg text-muted-foreground">
@@ -80,7 +87,7 @@ const InterviewSetupForm = ({ onSubmit }: InterviewSetupFormProps) => {
         </p>
       </div>
 
-      <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Position Selection */}
         <Card>
           <CardHeader>
@@ -91,10 +98,13 @@ const InterviewSetupForm = ({ onSubmit }: InterviewSetupFormProps) => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="position">Chọn vị trí từ danh sách có sẵn</Label>
-              <Select value={position} onValueChange={setPosition}>
+              <Label htmlFor="position">Chọn từ danh sách</Label>
+              <Select value={position} onValueChange={(value) => {
+                setPosition(value);
+                setCustomPosition(""); // Clear custom input when selecting from dropdown
+              }}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Chọn vị trí ứng tuyển..." />
+                  <SelectValue placeholder="Chọn vị trí..." />
                 </SelectTrigger>
                 <SelectContent>
                   {predefinedPositions.map((pos) => (
@@ -105,16 +115,19 @@ const InterviewSetupForm = ({ onSubmit }: InterviewSetupFormProps) => {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="text-sm text-muted-foreground text-center">hoặc</div>
-            
+
             <div>
               <Label htmlFor="custom-position">Nhập vị trí khác</Label>
               <Input
                 id="custom-position"
-                placeholder="Ví dụ: Software Engineer, Product Owner..."
-                value={position}
-                onChange={(e) => setPosition(e.target.value)}
+                placeholder="Ví dụ: Software Engineer..."
+                value={customPosition}
+                onChange={(e) => {
+                  setCustomPosition(e.target.value);
+                  setPosition(""); // Clear dropdown when typing custom
+                }}
               />
             </div>
           </CardContent>
@@ -130,8 +143,11 @@ const InterviewSetupForm = ({ onSubmit }: InterviewSetupFormProps) => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="field">Chọn lĩnh vực từ danh sách có sẵn</Label>
-              <Select value={field} onValueChange={setField}>
+              <Label htmlFor="field">Chọn từ danh sách</Label>
+              <Select value={field} onValueChange={(value) => {
+                setField(value);
+                setCustomField(""); // Clear custom input when selecting from dropdown
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn lĩnh vực..." />
                 </SelectTrigger>
@@ -144,16 +160,19 @@ const InterviewSetupForm = ({ onSubmit }: InterviewSetupFormProps) => {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="text-sm text-muted-foreground text-center">hoặc</div>
-            
+
             <div>
               <Label htmlFor="custom-field">Nhập lĩnh vực khác</Label>
               <Input
                 id="custom-field"
-                placeholder="Ví dụ: Fintech, E-commerce, Gaming..."
-                value={field}
-                onChange={(e) => setField(e.target.value)}
+                placeholder="Ví dụ: Fintech, E-commerce..."
+                value={customField}
+                onChange={(e) => {
+                  setCustomField(e.target.value);
+                  setField(""); // Clear dropdown when typing custom
+                }}
               />
             </div>
           </CardContent>
@@ -169,10 +188,10 @@ const InterviewSetupForm = ({ onSubmit }: InterviewSetupFormProps) => {
           </CardHeader>
           <CardContent>
             <div>
-              <Label htmlFor="level">Chọn cấp độ kinh nghiệm của bạn</Label>
+              <Label htmlFor="level">Chọn cấp độ kinh nghiệm</Label>
               <Select value={level} onValueChange={setLevel}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Chọn cấp độ kinh nghiệm..." />
+                  <SelectValue placeholder="Chọn cấp độ..." />
                 </SelectTrigger>
                 <SelectContent>
                   {experienceLevels.map((lvl) => (
@@ -185,19 +204,19 @@ const InterviewSetupForm = ({ onSubmit }: InterviewSetupFormProps) => {
             </div>
           </CardContent>
         </Card>
+      </div>
 
-        {/* Submit Button */}
-        <div className="text-center">
-          <Button 
-            onClick={handleSubmit}
-            disabled={!isFormValid}
-            size="lg"
-            className="gap-2"
-          >
-            <span>Tiếp tục</span>
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </div>
+      {/* Submit Button */}
+      <div className="text-center mt-8">
+        <Button
+          onClick={handleSubmit}
+          disabled={!isFormValid}
+          size="lg"
+          className="gap-2"
+        >
+          <span>Tiếp tục</span>
+          <ArrowRight className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );
