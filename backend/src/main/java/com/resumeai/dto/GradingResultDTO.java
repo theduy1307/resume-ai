@@ -19,7 +19,6 @@ public class GradingResultDTO {
 
     public GradingResultDTO() {}
 
-
     public GradingResultDTO(int totalScore, List<QuestionScoreDTO> questionScores, String generalFeedback, String improvementSuggestions) {
         this.totalScore = totalScore;
         this.questionScores = questionScores;
