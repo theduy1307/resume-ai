@@ -8,7 +8,7 @@ import InterviewSetupForm from "@/components/InterviewSetupForm";
 import { geminiApi, generateInterviewQuestionsFromBackend } from "@/services/geminiApi";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, Clock, Home, RotateCcw } from "lucide-react";
+import { ArrowLeft, ArrowRight, Clock, Home, RotateCcw, Brain } from "lucide-react";
 
 interface InterviewQuestionType {
   question: string;
@@ -36,6 +36,8 @@ const MockInterview = () => {
   const [hasResume, setHasResume] = useState(false);
   const [showInterviewSetup, setShowInterviewSetup] = useState(false);
   const [interviewInfo, setInterviewInfo] = useState<{position: string; field: string; level: string} | null>(null);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingMessage, setLoadingMessage] = useState("");
 
   useEffect(() => {
     // Check if resume data exists in localStorage
@@ -54,33 +56,87 @@ const MockInterview = () => {
 
   const fetchQuestionsFromResume = async () => {
     setIsLoading(true);
+    setLoadingProgress(0);
+    setLoadingMessage("Đang phân tích CV của bạn...");
+
     try {
-      const fetchedQuestions = await geminiApi.getInterviewQuestions("general");
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setLoadingProgress(prev => {
+          if (prev < 90) return prev + 10;
+          return prev;
+        });
+      }, 200);
+
+      setLoadingMessage("Đang tạo câu hỏi phỏng vấn phù hợp...");
+
+      // Thêm delay tối thiểu để đảm bảo loading screen hiển thị
+      const [fetchedQuestions] = await Promise.all([
+        geminiApi.getInterviewQuestions("general"),
+        new Promise(resolve => setTimeout(resolve, 1500)) // Delay tối thiểu 1.5 giây
+      ]);
+
+      clearInterval(progressInterval);
+      setLoadingProgress(100);
+      setLoadingMessage("Hoàn thành!");
+
+      // Delay nhỏ để hiển thị 100%
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       setQuestions(fetchedQuestions);
-      setIsLoading(false);
     } catch (error) {
       console.error("Error fetching questions:", error);
       toast.error("Đã xảy ra lỗi khi tải câu hỏi phỏng vấn. Vui lòng thử lại.");
+    } finally {
       setIsLoading(false);
+      setLoadingProgress(0);
+      setLoadingMessage("");
     }
   };
 
   const fetchQuestionsFromInterviewInfo = async (info: {position: string; field: string; level: string}) => {
     setIsLoading(true);
+    setLoadingProgress(0);
+    setLoadingMessage(`Đang chuẩn bị câu hỏi cho vị trí ${info.position}...`);
+
     try {
-      const fetchedQuestions = await generateInterviewQuestionsFromBackend(info.position, info.field, info.level);
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setLoadingProgress(prev => {
+          if (prev < 90) return prev + 8;
+          return prev;
+        });
+      }, 250);
+
+      setLoadingMessage(`Đang tạo câu hỏi phù hợp với cấp độ ${info.level}...`);
+
+      // Thêm delay tối thiểu để đảm bảo loading screen hiển thị
+      const [fetchedQuestions] = await Promise.all([
+        generateInterviewQuestionsFromBackend(info.position, info.field, info.level),
+        new Promise(resolve => setTimeout(resolve, 2000)) // Delay tối thiểu 2 giây
+      ]);
+
+      clearInterval(progressInterval);
+      setLoadingProgress(100);
+      setLoadingMessage("Hoàn thành!");
+
+      // Delay nhỏ để hiển thị 100%
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       setQuestions(fetchedQuestions);
-      setShowInterviewSetup(false);
-      setIsLoading(false);
     } catch (error) {
       console.error("Error fetching questions:", error);
       toast.error("Đã xảy ra lỗi khi tải câu hỏi phỏng vấn. Vui lòng thử lại.");
+    } finally {
       setIsLoading(false);
+      setLoadingProgress(0);
+      setLoadingMessage("");
     }
   };
 
   const handleInterviewSetup = (info: {position: string; field: string; level: string}) => {
     setInterviewInfo(info);
+    setShowInterviewSetup(false); // Ẩn form setup ngay lập tức
     fetchQuestionsFromInterviewInfo(info);
   };
 
@@ -157,13 +213,44 @@ const MockInterview = () => {
           <InterviewSetupForm onSubmit={handleInterviewSetup} />
         ) : isLoading ? (
           <div className="py-20 text-center">
-            <div className="mb-4 text-lg font-medium">
-              {hasResume
-                ? "Đang chuẩn bị câu hỏi phỏng vấn dựa trên CV của bạn..."
-                : `Đang chuẩn bị câu hỏi phỏng vấn cho vị trí ${interviewInfo?.position}...`
-              }
+            <div className="max-w-md mx-auto">
+              {/* Loading Icon */}
+              <div className="mb-6">
+                <Brain className="h-16 w-16 mx-auto text-primary animate-pulse" />
+              </div>
+
+              {/* Loading Message */}
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold mb-2">Đang chuẩn bị phỏng vấn</h3>
+                <p className="text-lg font-medium text-primary mb-2">
+                  {loadingMessage || (hasResume
+                    ? "Đang chuẩn bị câu hỏi phỏng vấn dựa trên CV của bạn..."
+                    : `Đang chuẩn bị câu hỏi phỏng vấn cho vị trí ${interviewInfo?.position}...`
+                  )}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  AI đang phân tích và tạo ra những câu hỏi phù hợp nhất cho bạn
+                </p>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="mb-4">
+                <Progress
+                  value={loadingProgress || 70}
+                  className="w-full h-3"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                  <span>0%</span>
+                  <span>{Math.round(loadingProgress || 70)}%</span>
+                  <span>100%</span>
+                </div>
+              </div>
+
+              {/* Loading Tips */}
+              <div className="text-xs text-muted-foreground">
+                <p>💡 Mẹo: Hãy chuẩn bị tinh thần thoải mái và trả lời một cách tự nhiên nhất</p>
+              </div>
             </div>
-            <Progress value={70} className="w-full max-w-md mx-auto" />
           </div>
         ) : (
           <>
