@@ -67,9 +67,8 @@ public class GeminiClient {
                 Hãy phân tích hồ sơ dựa trên MÔ TẢ CÔNG VIỆC và trích xuất các phần: "Kinh nghiệm làm việc", "Học vấn", và "Kỹ năng". 
                 Với mỗi phần, hãy:
                 1. Trích xuất và tóm tắt nội dung hiện tại từ hồ sơ
-                2. Đánh giá mức độ phù hợp của phần này so với mô tả công việc (ghi rõ: phù hợp / chưa phù hợp)
-                3. Đề xuất chỉnh sửa/bổ sung để nâng cao mức độ phù hợp
-                4. Giải thích lý do tại sao cần những đề xuất đó
+                2. Đề xuất chỉnh sửa/bổ sung để nâng cao mức độ phù hợp với mô tả công việc
+                3. Giải thích lý do tại sao cần những đề xuất đó
 
                 Nếu phần nào bị thiếu, hãy ghi rõ "Không có thông tin" trong nội dung.
 
@@ -150,13 +149,15 @@ public class GeminiClient {
                 responseText = responseText.replace("```", "").trim();
             }
 
+            System.out.println("responseText: " + responseText);
+
             ObjectMapper mapper = new ObjectMapper();
             ResumeAnalysisDTO dto = mapper.readValue(responseText, ResumeAnalysisDTO.class);
 
             return dto;
             
         } catch (Exception e) {
-            System.out.println(e.getMessage());
+            System.out.println("e.Message: " + e.getMessage());
             throw new RuntimeException("Lỗi khi phân tích hồ sơ với Gemini: " + e.getMessage(), e);
         }
     }
