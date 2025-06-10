@@ -22,7 +22,7 @@ public class GeminiClient {
     private String modelName;
 
     private final Gson gson = new Gson();
-    public ResponseStream<GenerateContentResponse> generateContentStream(List<Content> contents, Schema schema) {
+    public GenerateContentResponse generateContent(List<Content> contents, Schema schema) {
         // Khởi tạo Client
         try (Client geminiClient = Client.builder().apiKey(apiKey).build()) {
             GenerateContentConfig config = GenerateContentConfig.builder()
@@ -32,7 +32,7 @@ public class GeminiClient {
 
             // các hàm controller sẽ truyền contents và schema vào sau
 
-            return geminiClient.models.generateContentStream(modelName, contents, config);
+            return geminiClient.models.generateContent(modelName, contents, config);
         }
         catch (Exception e) {
             throw new RuntimeException("Lỗi khi gọi API Gemini" + e.getMessage(), e);
