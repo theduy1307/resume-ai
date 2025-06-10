@@ -77,28 +77,27 @@ public class ResumeController {
 
    @PostMapping("/analyze-text")
    public ResponseEntity<?> analyzeResumeText(@RequestBody Map<String, String> request) {
-       try {
-           String resumeText = request.get("text");
+        try {
+            String resumeText = request.get("text");
+            String jobDescription = request.getOrDefault("jobDescription", null);
 
-           if (resumeText == null || resumeText.trim().isEmpty()) {
-               return ResponseEntity.badRequest()
-                   .body(Map.of("error", "Text CV không được để trống"));
-           }
+            if (resumeText == null || resumeText.trim().isEmpty()) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Text CV không được để trống"));
+            }
 
-           // Analyze resume with Gemini AI
-           ResumeAnalysisDTO result = geminiService.analyzeResume(resumeText);
+            ResumeAnalysisDTO result = geminiService.analyzeResume(resumeText, jobDescription);
 
-           Map<String, Object> response = new HashMap<>();
-           response.put("success", true);
-           response.put("message", "Phân tích CV thành công");
-           response.put("data", result);
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Phân tích CV thành công",
+                "data", result
+            ));
 
-           return ResponseEntity.ok(response);
-
-       } catch (Exception e) {
-           return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-               .body(Map.of("error", "Lỗi phân tích CV: " + e.getMessage()));
-       }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Lỗi phân tích CV: " + e.getMessage()));
+        }
    }
 
 //    @PostMapping("/job-match")

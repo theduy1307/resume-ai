@@ -9,6 +9,9 @@ import com.google.gson.JsonParser;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.resumeai.dto.ResumeAnalysisDTO;
+
+import autovalue.shaded.org.checkerframework.checker.nullness.qual.Nullable;
+
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.List;
@@ -42,28 +45,72 @@ public class GeminiClient {
         }
     }
 
-    public ResumeAnalysisDTO analyzeResume(String rawResumeText) {
+    public ResumeAnalysisDTO analyzeResume(String rawResumeText, @Nullable String jobDescription) {
         try {
             // Tạo prompt chi tiết cho Gemini
-            String prompt = String.format("""
+            String prompt;
+            
+       if (jobDescription != null && !jobDescription.trim().isEmpty()) {
+            prompt = String.format("""
                 Bạn là một chuyên gia tuyển dụng và hướng nghiệp với nhiều năm kinh nghiệm.
+
                 Đây là một đoạn văn bản hồ sơ xin việc chưa được định dạng:
                 ---
                 %s
                 ---
-                
+
+                Đây là mô tả công việc tương ứng:
+                ---
+                %s
+                ---
+
+                Hãy phân tích hồ sơ dựa trên MÔ TẢ CÔNG VIỆC và trích xuất các phần: "Kinh nghiệm làm việc", "Học vấn", và "Kỹ năng". 
+                Với mỗi phần, hãy:
+                1. Trích xuất và tóm tắt nội dung hiện tại từ hồ sơ
+                2. Đánh giá mức độ phù hợp của phần này so với mô tả công việc (ghi rõ: phù hợp / chưa phù hợp)
+                3. Đề xuất chỉnh sửa/bổ sung để nâng cao mức độ phù hợp
+                4. Giải thích lý do tại sao cần những đề xuất đó
+
+                Nếu phần nào bị thiếu, hãy ghi rõ "Không có thông tin" trong nội dung.
+
+                Trả kết quả theo định dạng JSON sau:
+                {
+                  "kinh_nghiem_lam_viec": {
+                    "noi_dung": "...",
+                    "de_xuat": "...",
+                    "ly_do": "..."
+                  },
+                  "hoc_van": {
+                    "noi_dung": "...",
+                    "de_xuat": "...",
+                    "ly_do": "..."
+                  },
+                  "ky_nang": {
+                    "noi_dung": "...",
+                    "de_xuat": "...",
+                    "ly_do": "..."
+                  }
+                }
+                """, rawResumeText, jobDescription);
+        } else {
+            // Giữ nguyên logic cũ nếu không có job description
+            prompt = String.format("""
+                Bạn là một chuyên gia tuyển dụng và hướng nghiệp với nhiều năm kinh nghiệm.
+
+                Đây là một đoạn văn bản hồ sơ xin việc chưa được định dạng:
+                ---
+                %s
+                ---
+
                 Hãy phân tích đoạn văn này và trích xuất các phần: "Kinh nghiệm làm việc", "Học vấn", và "Kỹ năng". 
                 Với mỗi phần, hãy:
                 1. Trích xuất và tóm tắt nội dung hiện tại từ văn bản gốc
                 2. Đề xuất nội dung cụ thể nên bổ sung hoặc chỉnh sửa để cải thiện hồ sơ
                 3. Giải thích rõ ràng lý do tại sao cần có những đề xuất này
-                
-                Lưu ý:
-                - Nếu phần nào thiếu hoàn toàn, hãy ghi "Không có thông tin" trong noi_dung
-                - Đề xuất phải cụ thể và có thể thực hiện được
-                - Sử dụng tiếng Việt trong toàn bộ phân tích
-                
-                Trả về kết quả theo đúng định dạng JSON sau:
+
+                Nếu phần nào thiếu hoàn toàn, hãy ghi "Không có thông tin" trong noi_dung.
+
+                Trả kết quả theo định dạng JSON sau:
                 {
                   "kinh_nghiem_lam_viec": {
                     "noi_dung": "...",
@@ -82,6 +129,8 @@ public class GeminiClient {
                   }
                 }
                 """, rawResumeText);
+        }
+            
 
             // Tạo Content với builder pattern
             Content content = Content.builder()
