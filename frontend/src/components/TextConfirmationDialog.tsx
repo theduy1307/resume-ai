@@ -39,47 +39,54 @@ const TextConfirmationDialog: React.FC<TextConfirmationDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[80vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Xác nhận nội dung CV đã trích xuất
+      <DialogContent className="w-[95vw] max-w-4xl h-[90vh] max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <FileText className="h-5 w-5 flex-shrink-0" />
+            <span className="truncate">Xác nhận nội dung CV đã trích xuất</span>
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>File:</strong> {filename}
+        <div className="flex-1 px-6 overflow-hidden flex flex-col min-h-0">
+          <Alert className="mb-4 flex-shrink-0">
+            <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+            <AlertDescription className="text-sm">
+              <strong>File:</strong> <span className="break-all">{filename}</span>
               <br />
-              Vui lòng kiểm tra và chỉnh sửa nội dung nếu cần thiết. Bạn có thể xóa thông tin nhạy cảm hoặc sửa bố cục trước khi gửi cho AI phân tích.
+              <span className="text-xs">
+                Vui lòng kiểm tra và chỉnh sửa nội dung nếu cần thiết. Bạn có thể xóa thông tin nhạy cảm hoặc sửa bố cục trước khi gửi cho AI phân tích.
+              </span>
             </AlertDescription>
           </Alert>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
+          <div className="flex-1 flex flex-col min-h-0">
+            <label className="text-sm font-medium mb-2 flex-shrink-0">
               Nội dung CV (có thể chỉnh sửa):
             </label>
             <Textarea
               value={editedText}
               onChange={(e) => setEditedText(e.target.value)}
-              className="min-h-[400px] font-mono text-sm"
+              className="flex-1 font-mono text-xs sm:text-sm resize-none min-h-[200px]"
               placeholder="Nội dung CV sẽ hiển thị ở đây..."
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-2 flex-shrink-0">
               Độ dài: {editedText.length} ký tự
             </p>
           </div>
         </div>
 
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={handleCancel}>
+        <DialogFooter className="px-6 py-4 flex-shrink-0 gap-2 flex-col sm:flex-row">
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+            className="w-full sm:w-auto order-2 sm:order-1"
+          >
             Hủy
           </Button>
-          <Button 
+          <Button
             onClick={handleConfirm}
             disabled={!editedText.trim()}
+            className="w-full sm:w-auto order-1 sm:order-2"
           >
             Xác nhận và tiếp tục
           </Button>
