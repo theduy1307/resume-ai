@@ -72,6 +72,7 @@ export GEMINI_API_KEY="your-gemini-api-key"
 # Chạy backend
 mvn spring-boot:run
 ```
+Hoặc thay API key vào file `backend/src/main/resources/application.properties`
 
 Backend sẽ chạy tại: `http://localhost:8080`
 
@@ -88,7 +89,9 @@ npm install
 npm run dev
 ```
 
-Frontend sẽ chạy tại: `http://localhost:5173`
+Frontend sẽ chạy tại: `http://localhost:5173` / `http://localhost:8081`
+
+Nên chạy backend trước khi chạy frontend để tránh bị frontend chiếm port 8080.
 
 ## API Endpoints
 
