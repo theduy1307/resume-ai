@@ -1,6 +1,10 @@
 package com.resumeai.dto;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.resumeai.service.SingleOrArrayDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 /**
  * DTO cho kết quả phân tích hồ sơ xin việc
@@ -63,7 +67,8 @@ class SectionAnalysisDTO {
     private String noiDung;
     
     @JsonProperty("de_xuat")
-    private String deXuat;
+    @JsonDeserialize(using = SingleOrArrayDeserializer.class)
+    private List<String> deXuat;
     
     @JsonProperty("ly_do")
     private String lyDo;
@@ -71,7 +76,7 @@ class SectionAnalysisDTO {
     // Constructors
     public SectionAnalysisDTO() {}
 
-    public SectionAnalysisDTO(String noiDung, String deXuat, String lyDo) {
+    public SectionAnalysisDTO(String noiDung, List<String> deXuat, String lyDo) {
         this.noiDung = noiDung;
         this.deXuat = deXuat;
         this.lyDo = lyDo;
@@ -86,11 +91,11 @@ class SectionAnalysisDTO {
         this.noiDung = noiDung;
     }
 
-    public String getDeXuat() {
+    public List<String> getDeXuat() {
         return deXuat;
     }
 
-    public void setDeXuat(String deXuat) {
+    public void setDeXuat(List<String> deXuat) {
         this.deXuat = deXuat;
     }
 
