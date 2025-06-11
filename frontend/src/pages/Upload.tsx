@@ -1,9 +1,10 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, MessageSquare, Trash2, Loader2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { ArrowRight, MessageSquare, Trash2, Loader2, Brain } from "lucide-react";
 import Header from "@/components/Header";
 import FileUpload from "@/components/FileUpload";
 import useLocalStorage from "@/hooks/useLocalStorage";
@@ -29,6 +30,18 @@ const Upload = () => {
   const [showTextDialog, setShowTextDialog] = useState(false);
   const [extractedText, setExtractedText] = useState("");
   const [currentFilename, setCurrentFilename] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadingMessage, setLoadingMessage] = useState("");
+
+  // Load data from localStorage on component mount
+  useEffect(() => {
+    // Load job description from localStorage
+    const savedJobDescription = localStorage.getItem("jobDescription");
+    if (savedJobDescription) {
+      setJobDescriptionText(savedJobDescription);
+    }
+  }, []);
 
   const handleFileUpload = async (file: File) => {
     setUploading(true);
@@ -82,13 +95,23 @@ const Upload = () => {
     setResumeFile(null);
   };
 
-  const handleJobDescriptionFileUpload = (file: File) => {
-    setJobDescriptionFile(file);
-    
-    // Simulate reading the file content
-    setJobDescriptionText("Position: Senior Frontend Developer\n\nResponsibilities:\n• Develop and maintain web applications using React, TypeScript, and GraphQL\n• Collaborate with designers and backend developers\n• Create reusable UI components\n\nRequirements:\n• 3+ years of experience with React\n• Strong knowledge of JavaScript and TypeScript\n• Experience with GraphQL and RESTful APIs\n• Experience with version control systems like Git\n• Knowledge of Docker is a plus");
-    
-    toast.success("Mô tả công việc đã được tải lên thành công");
+  const handleJobDescriptionFileUpload = async (file: File) => {
+    try {
+      setJobDescriptionFile(file);
+
+      // Extract text from JD file
+      const result = await extractTextFromFile(file);
+      const jdText = result.extractedText;
+
+      setJobDescriptionText(jdText);
+      localStorage.setItem("jobDescription", jdText);
+
+      toast.success("Mô tả công việc đã được tải lên thành công");
+    } catch (error) {
+      console.error("Error extracting JD text:", error);
+      toast.error("Lỗi khi trích xuất text từ file JD");
+      setJobDescriptionFile(null);
+    }
   };
 
   const handleClearResume = () => {
@@ -97,6 +120,7 @@ const Upload = () => {
     localStorage.removeItem("resumeSections");
     localStorage.removeItem("resumeSectionsForEval");
     localStorage.removeItem("resumeSectionsForInterview");
+    localStorage.removeItem("extractedText");
     toast.success("Đã xóa CV thành công");
   };
 
@@ -114,22 +138,45 @@ const Upload = () => {
       toast.error("Vui lòng tải lên CV trước");
       return;
     }
-    
+
+    setIsAnalyzing(true);
+    setLoadingProgress(0);
+    setLoadingMessage("Đang phân tích nội dung CV...");
+
     try {
-      // If we have extracted text, analyze it with Gemini first
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setLoadingProgress(prev => {
+          if (prev < 90) return prev + 10;
+          return prev;
+        });
+      }, 300);
+
+      // If we have extracted text, analyze it with Gemini
       if (savedText) {
-        toast.info("Đang phân tích CV với AI...");
-        const analysis = await analyzeResume(savedText, jobDescriptionText);
-        
+        setLoadingMessage(jobDescriptionText
+          ? "Đang so sánh CV với mô tả công việc..."
+          : "Đang tạo nội dung cải thiện cho CV...");
+
+        // Add minimum delay to ensure loading screen is visible
+        const [analysis] = await Promise.all([
+          analyzeResume(savedText, jobDescriptionText || undefined),
+          new Promise(resolve => setTimeout(resolve, 2000)) // Minimum 2 seconds delay
+        ]);
+
+        clearInterval(progressInterval);
+        setLoadingProgress(100);
+        setLoadingMessage("Hoàn thành phân tích!");
+
         // Convert to sections format
         const analyzedSections = analysis.sections.map((section, index) => ({
           id: `section-${index}`,
           title: section.title,
           content: section.content,
-          improvements: section.improvements,
+          improvements: section.improvedContent,
           reason: section.reason,
         }));
-        
+
         // Save analyzed data
         localStorage.setItem("resumeSectionsForEval", JSON.stringify(analyzedSections));
 
@@ -139,15 +186,40 @@ const Upload = () => {
       } else {
         // Use existing sections
         localStorage.setItem("resumeSectionsForEval", JSON.stringify(resumeSections));
+        clearInterval(progressInterval);
+        setLoadingProgress(100);
+        setLoadingMessage("Hoàn thành!");
       }
-      
+
       localStorage.setItem("jobDescription", jobDescriptionText);
-      
+
+      // Small delay to show 100%
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       // Navigate to evaluation page
       navigate("/evaluation");
     } catch (error) {
       console.error("Error analyzing resume:", error);
-      toast.error(error instanceof Error ? error.message : "Lỗi khi phân tích CV");
+
+      // Provide more specific error messages
+      let errorMessage = "Lỗi khi phân tích CV";
+      if (error instanceof Error) {
+        if (error.message.includes("fetch")) {
+          errorMessage = "Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.";
+        } else if (error.message.includes("timeout")) {
+          errorMessage = "Quá thời gian chờ. Vui lòng thử lại.";
+        } else if (error.message.includes("API key")) {
+          errorMessage = "Lỗi cấu hình hệ thống. Vui lòng liên hệ quản trị viên.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      toast.error(errorMessage);
+    } finally {
+      setIsAnalyzing(false);
+      setLoadingProgress(0);
+      setLoadingMessage("");
     }
   };
 
@@ -164,9 +236,50 @@ const Upload = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      
-      <main className="flex-1 container max-w-5xl mx-auto px-4 py-8 pt-24">
-        <h1 className="text-3xl font-bold mb-8 text-center">Tải lên hồ sơ của bạn</h1>
+
+      {isAnalyzing ? (
+        <main className="flex-1 flex items-center justify-center px-4 py-8 pt-24">
+          <div className="py-20 text-center">
+            <div className="max-w-md mx-auto">
+              {/* Loading Icon */}
+              <div className="mb-6">
+                <Brain className="h-16 w-16 mx-auto text-primary animate-pulse" />
+              </div>
+
+              {/* Loading Message */}
+              <div className="mb-6">
+                <h3 className="text-xl font-semibold mb-2">Đang đánh giá CV</h3>
+                <p className="text-lg font-medium text-primary mb-2">
+                  {loadingMessage || "Đang phân tích nội dung CV của bạn..."}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  AI đang phân tích và tạo nội dung cải thiện cho từng phần của CV
+                </p>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="mb-4">
+                <Progress
+                  value={loadingProgress}
+                  className="w-full h-3"
+                />
+                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                  <span>0%</span>
+                  <span>{Math.round(loadingProgress)}%</span>
+                  <span>100%</span>
+                </div>
+              </div>
+
+              {/* Loading Tips */}
+              <div className="text-xs text-muted-foreground">
+                <p>💡 Mẹo: Kết quả sẽ hiển thị nội dung gốc và phiên bản đã được cải thiện</p>
+              </div>
+            </div>
+          </div>
+        </main>
+      ) : (
+        <main className="flex-1 container max-w-5xl mx-auto px-4 py-8 pt-24">
+          <h1 className="text-3xl font-bold mb-8 text-center">Tải lên hồ sơ của bạn</h1>
         
         <div className="grid md:grid-cols-2 gap-8 mb-8">
           {/* Resume Upload Section */}
@@ -248,34 +361,59 @@ const Upload = () => {
                   placeholder="Dán mô tả công việc vào đây..."
                   className="min-h-[300px]"
                   value={jobDescriptionText}
-                  onChange={(e) => setJobDescriptionText(e.target.value)}
+                  onChange={(e) => {
+                    setJobDescriptionText(e.target.value);
+                    // Save to localStorage immediately
+                    localStorage.setItem("jobDescription", e.target.value);
+                  }}
                 />
               </TabsContent>
             </Tabs>
+
+            {jobDescriptionText && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-blue-800 font-medium">✓ Mô tả công việc đã được lưu</p>
+                <p className="text-blue-600 text-sm mt-1">
+                  Độ dài: {jobDescriptionText.length} ký tự
+                </p>
+              </div>
+            )}
           </div>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center mt-12">
-          <Button onClick={handleEvaluate} size="lg" className="gap-2">
+          <Button
+            onClick={handleEvaluate}
+            size="lg"
+            className="gap-2"
+            disabled={isAnalyzing || uploading}
+          >
             <span>Đánh giá hồ sơ</span>
             <ArrowRight className="h-4 w-4" />
           </Button>
-          
-          <Button onClick={handleStartMockInterview} variant="outline" size="lg" className="gap-2">
+
+          <Button
+            onClick={handleStartMockInterview}
+            variant="outline"
+            size="lg"
+            className="gap-2"
+            disabled={isAnalyzing || uploading}
+          >
             <MessageSquare className="h-4 w-4" />
             <span>Bắt đầu phỏng vấn thử</span>
           </Button>
         </div>
 
-        {resumeSections.length === 0 && (
-          <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-blue-800 text-center">
-              💡 Mẹo: Bạn có thể bắt đầu phỏng vấn thử ngay cả khi chưa tải CV. 
-              Hệ thống sẽ cho phép bạn chọn ngành nghề để tạo câu hỏi phù hợp!
-            </p>
-          </div>
-        )}
-      </main>
+          {resumeSections.length === 0 && (
+            <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-800 text-center">
+                💡 Mẹo: Bạn có thể bắt đầu phỏng vấn thử ngay cả khi chưa tải CV.
+                Hệ thống sẽ cho phép bạn chọn ngành nghề để tạo câu hỏi phù hợp!
+              </p>
+            </div>
+          )}
+        </main>
+      )}
 
       <TextConfirmationDialog
         isOpen={showTextDialog}

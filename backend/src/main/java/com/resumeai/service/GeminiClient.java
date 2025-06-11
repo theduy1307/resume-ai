@@ -11,15 +11,16 @@ import org.springframework.stereotype.Service;
 import com.resumeai.dto.ResumeAnalysisDTO;
 
 import autovalue.shaded.org.checkerframework.checker.nullness.qual.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.net.SocketTimeoutException;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class GeminiClient {
+    private static final Logger logger = LoggerFactory.getLogger(GeminiClient.class);
+
     @Value("${gemini.api.key}")
     private String apiKey;
 
@@ -47,12 +48,17 @@ public class GeminiClient {
 
     public ResumeAnalysisDTO analyzeResume(String rawResumeText, @Nullable String jobDescription) {
         try {
+            logger.info("Starting resume analysis. Resume length: {}, Has job description: {}",
+                rawResumeText.length(), jobDescription != null);
+
             // Tạo prompt chi tiết cho Gemini
             String prompt;
             
        if (jobDescription != null && !jobDescription.trim().isEmpty()) {
             prompt = String.format("""
                 Bạn là một chuyên gia tuyển dụng và hướng nghiệp với nhiều năm kinh nghiệm.
+
+                QUAN TRỌNG: Phân tích ngôn ngữ của CV gốc và sử dụng CHÍNH XÁC cùng ngôn ngữ đó trong tất cả nội dung cải thiện.
 
                 Đây là một đoạn văn bản hồ sơ xin việc chưa được định dạng:
                 ---
@@ -64,66 +70,68 @@ public class GeminiClient {
                 %s
                 ---
 
-                Hãy phân tích hồ sơ dựa trên MÔ TẢ CÔNG VIỆC và trích xuất các phần: "Kinh nghiệm làm việc", "Học vấn", và "Kỹ năng". 
+                Hãy phân tích hồ sơ dựa trên MÔ TẢ CÔNG VIỆC và trích xuất các phần: "Kinh nghiệm làm việc", "Học vấn", và "Kỹ năng".
                 Với mỗi phần, hãy:
-                1. Trích xuất và tóm tắt nội dung hiện tại từ hồ sơ
-                2. Đề xuất nội dung cụ thể mà bạn nghĩ là nên được bổ sung hoặc chỉnh sửa để cải thiện hồ sơ, đừng trình bày nội dung này với giọng điêu giống như một quan điểm của bạn, thay vào đó trình bày nó với giọng điệu như thể nó là một đoạn hồ sơ xin việc.
-                3. Giải thích lý do tại sao cần những đề xuất đó
+                1. Trích xuất và tóm tắt nội dung hiện tại từ hồ sơ (noi_dung)
+                2. Viết lại nội dung đã được cải thiện hoàn chỉnh, phù hợp với mô tả công việc. Nội dung này phải được viết như một phần hoàn chỉnh của CV, không phải dạng gợi ý hay nhận xét. QUAN TRỌNG: Sử dụng cùng ngôn ngữ với CV gốc (noi_dung_cai_thien)
+                3. Giải thích lý do tại sao cần cải thiện và những thay đổi đã được thực hiện (ly_do)
 
-                Nếu phần nào bị thiếu, hãy ghi rõ "Không có thông tin" trong nội dung.
+                Nếu phần nào bị thiếu trong hồ sơ gốc, hãy ghi "Không có thông tin" trong noi_dung và tạo nội dung mẫu phù hợp với mô tả công việc trong noi_dung_cai_thien. Nội dung mẫu phải sử dụng cùng ngôn ngữ với phần còn lại của CV.
 
                 Trả kết quả theo định dạng JSON sau:
                 {
                   "kinh_nghiem_lam_viec": {
                     "noi_dung": string,
-                    "de_xuat": string[],
+                    "noi_dung_cai_thien": string,
                     "ly_do": string
                   },
                   "hoc_van": {
                     "noi_dung": string,
-                    "de_xuat": string[],
+                    "noi_dung_cai_thien": string,
                     "ly_do": string
                   },
                   "ky_nang": {
                     "noi_dung": string,
-                    "de_xuat": string[],
+                    "noi_dung_cai_thien": string,
                     "ly_do": string
                   }
                 }
                 """, rawResumeText, jobDescription);
         } else {
-            // Giữ nguyên logic cũ nếu không có job description
+            // Logic cho trường hợp không có job description
             prompt = String.format("""
                 Bạn là một chuyên gia tuyển dụng và hướng nghiệp với nhiều năm kinh nghiệm.
+
+                QUAN TRỌNG: Phân tích ngôn ngữ của CV gốc và sử dụng CHÍNH XÁC cùng ngôn ngữ đó trong tất cả nội dung cải thiện.
 
                 Đây là một đoạn văn bản hồ sơ xin việc chưa được định dạng:
                 ---
                 %s
                 ---
 
-                Hãy phân tích đoạn văn này và trích xuất các phần: "Kinh nghiệm làm việc", "Học vấn", và "Kỹ năng". 
+                Hãy phân tích đoạn văn này và trích xuất các phần: "Kinh nghiệm làm việc", "Học vấn", và "Kỹ năng".
                 Với mỗi phần, hãy:
-                1. Trích xuất và tóm tắt nội dung hiện tại từ văn bản gốc
-                2. Đề xuất nội dung cụ thể mà bạn nghĩ là nên được bổ sung hoặc chỉnh sửa để cải thiện hồ sơ, đừng trình bày nội dung này với giọng điêu giống như một quan điểm của bạn, thay vào đó trình bày nó với giọng điệu như thể nó là một đoạn hồ sơ xin việc.
-                3. Giải thích rõ ràng lý do tại sao cần có những đề xuất này
+                1. Trích xuất và tóm tắt nội dung hiện tại từ văn bản gốc (noi_dung)
+                2. Viết lại nội dung đã được cải thiện hoàn chỉnh với ngôn từ chuyên nghiệp, rõ ràng và có tác động mạnh hơn. Nội dung này phải được viết như một phần hoàn chỉnh của CV, không phải dạng gợi ý hay nhận xét. QUAN TRỌNG: Sử dụng cùng ngôn ngữ với CV gốc (noi_dung_cai_thien)
+                3. Giải thích rõ ràng lý do tại sao cần cải thiện và những thay đổi đã được thực hiện (ly_do)
 
-                Nếu phần nào thiếu hoàn toàn, hãy ghi "Không có thông tin" trong noi_dung.
+                Nếu phần nào thiếu hoàn toàn trong hồ sơ gốc, hãy ghi "Không có thông tin" trong noi_dung và tạo nội dung mẫu chuyên nghiệp trong noi_dung_cai_thien. Nội dung mẫu phải sử dụng cùng ngôn ngữ với phần còn lại của CV.
 
                 Trả kết quả theo định dạng JSON sau:
                 {
                   "kinh_nghiem_lam_viec": {
                     "noi_dung": string,
-                    "de_xuat": string[],
-                    "ly_do": string,
+                    "noi_dung_cai_thien": string,
+                    "ly_do": string
                   },
                   "hoc_van": {
                     "noi_dung": string,
-                    "de_xuat": string[],
-                    "ly_do": string,
+                    "noi_dung_cai_thien": string,
+                    "ly_do": string
                   },
                   "ky_nang": {
                     "noi_dung": string,
-                    "de_xuat": string[],
+                    "noi_dung_cai_thien": string,
                     "ly_do": string
                   }
                 }
@@ -138,10 +146,13 @@ public class GeminiClient {
                 .build();
             
             // Gọi API Gemini với schema null (để Gemini tự format JSON)
+            logger.info("Calling Gemini API for resume analysis");
             GenerateContentResponse response = generateContent(List.of(content), null);
-            
+
             // Trích xuất JSON từ response
             String responseText = response.text();
+            logger.debug("Raw response from Gemini: {}", responseText);
+
             if (responseText.contains("```json")) {
                 responseText = responseText.replace("```json", "").trim();
             }
@@ -149,16 +160,27 @@ public class GeminiClient {
                 responseText = responseText.replace("```", "").trim();
             }
 
-            System.out.println("responseText: " + responseText);
+            logger.info("Cleaned response text length: {}", responseText.length());
 
             ObjectMapper mapper = new ObjectMapper();
             ResumeAnalysisDTO dto = mapper.readValue(responseText, ResumeAnalysisDTO.class);
 
+            logger.info("Successfully parsed response to DTO");
             return dto;
             
         } catch (Exception e) {
-            System.out.println("e.Message: " + e.getMessage());
-            throw new RuntimeException("Lỗi khi phân tích hồ sơ với Gemini: " + e.getMessage(), e);
+            logger.error("Error analyzing resume with Gemini: {}", e.getMessage(), e);
+
+            // Provide more specific error messages
+            if (e.getMessage().contains("API key")) {
+                throw new RuntimeException("Lỗi xác thực API Gemini. Vui lòng kiểm tra cấu hình.", e);
+            } else if (e.getMessage().contains("timeout")) {
+                throw new RuntimeException("Timeout khi gọi API Gemini. Vui lòng thử lại.", e);
+            } else if (e.getMessage().contains("JSON")) {
+                throw new RuntimeException("Lỗi xử lý dữ liệu từ Gemini. Vui lòng thử lại.", e);
+            } else {
+                throw new RuntimeException("Lỗi khi phân tích hồ sơ với Gemini: " + e.getMessage(), e);
+            }
         }
     }
 
@@ -171,36 +193,5 @@ public class GeminiClient {
     //     }
     // }
 
-    // DTOs cho kết quả phân tích
-    public static class ResumeAnalysisResult {
-        private SectionAnalysis kinh_nghiem_lam_viec;
-        private SectionAnalysis hoc_van;
-        private SectionAnalysis ky_nang;
 
-        // Getters and setters
-        public SectionAnalysis getKinh_nghiem_lam_viec() { return kinh_nghiem_lam_viec; }
-        public void setKinh_nghiem_lam_viec(SectionAnalysis kinh_nghiem_lam_viec) { this.kinh_nghiem_lam_viec = kinh_nghiem_lam_viec; }
-        
-        public SectionAnalysis getHoc_van() { return hoc_van; }
-        public void setHoc_van(SectionAnalysis hoc_van) { this.hoc_van = hoc_van; }
-        
-        public SectionAnalysis getKy_nang() { return ky_nang; }
-        public void setKy_nang(SectionAnalysis ky_nang) { this.ky_nang = ky_nang; }
-    }
-
-    public static class SectionAnalysis {
-        private String noi_dung;
-        private String de_xuat;
-        private String ly_do;
-
-        // Getters and setters
-        public String getNoi_dung() { return noi_dung; }
-        public void setNoi_dung(String noi_dung) { this.noi_dung = noi_dung; }
-        
-        public String getDe_xuat() { return de_xuat; }
-        public void setDe_xuat(String de_xuat) { this.de_xuat = de_xuat; }
-        
-        public String getLy_do() { return ly_do; }
-        public void setLy_do(String ly_do) { this.ly_do = ly_do; }
-    }
 }

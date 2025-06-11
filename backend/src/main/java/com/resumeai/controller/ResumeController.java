@@ -6,6 +6,8 @@ import com.resumeai.model.InterviewQuestion;
 import com.resumeai.model.JobMatchResult;
 import com.resumeai.service.DocumentParserService;
 import com.resumeai.service.GeminiClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,14 +15,14 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
 
 @RestController
 @RequestMapping("/resume")
 @CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
 public class ResumeController {
+
+   private static final Logger logger = LoggerFactory.getLogger(ResumeController.class);
 
    @Autowired
    private DocumentParserService documentParserService;
@@ -78,10 +80,24 @@ public class ResumeController {
    @PostMapping("/analyze-text")
    public ResponseEntity<?> analyzeResumeText(@RequestBody Map<String, String> request) {
         try {
+            logger.info("Received resume analysis request");
+
             String resumeText = request.get("text");
             String jobDescription = request.get("jobDescription");
             if ("null".equalsIgnoreCase(jobDescription)) {
                 jobDescription = null;
+            }
+
+            logger.info("Resume text length: {}, Job description provided: {}",
+                resumeText != null ? resumeText.length() : 0,
+                jobDescription != null && !jobDescription.trim().isEmpty());
+
+            // Validate job description if provided
+            if (jobDescription != null && !jobDescription.trim().isEmpty()) {
+                if (jobDescription.length() > 20000) {
+                    return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Mô tả công việc quá dài. Vui lòng rút gọn nội dung."));
+                }
             }
 
             if (resumeText == null || resumeText.trim().isEmpty()) {
@@ -89,7 +105,21 @@ public class ResumeController {
                     .body(Map.of("error", "Text CV không được để trống"));
             }
 
+            // Validate minimum content length
+            if (resumeText.trim().length() < 50) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Nội dung CV quá ngắn. Vui lòng cung cấp thông tin chi tiết hơn."));
+            }
+
+            // Validate maximum content length (to prevent abuse)
+            if (resumeText.length() > 50000) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Nội dung CV quá dài. Vui lòng rút gọn nội dung."));
+            }
+
+            logger.info("Starting resume analysis with Gemini");
             ResumeAnalysisDTO result = geminiService.analyzeResume(resumeText, jobDescription);
+            logger.info("Resume analysis completed successfully");
 
             return ResponseEntity.ok(Map.of(
                 "success", true,
@@ -98,6 +128,7 @@ public class ResumeController {
             ));
 
         } catch (Exception e) {
+            logger.error("Error analyzing resume: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Lỗi phân tích CV: " + e.getMessage()));
         }

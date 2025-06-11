@@ -12,7 +12,7 @@ interface ResumeAnalysis {
   sections: Array<{
     title: string;
     content: string;
-    improvements: string[];
+    improvedContent: string;
     reason: string,
   }>;
   extractedText?: string;
@@ -78,19 +78,19 @@ export const analyzeResume = async (resumeText: string, jobDescription?: string)
     {
       title: "Kinh nghiệm làm việc",
       content: raw.kinh_nghiem_lam_viec.noi_dung,
-      improvements: [raw.kinh_nghiem_lam_viec.de_xuat],
+      improvedContent: raw.kinh_nghiem_lam_viec.noi_dung_cai_thien,
       reason: raw.kinh_nghiem_lam_viec.ly_do,
     },
     {
       title: "Học vấn",
       content: raw.hoc_van.noi_dung,
-      improvements: [raw.hoc_van.de_xuat],
+      improvedContent: raw.hoc_van.noi_dung_cai_thien,
       reason: raw.hoc_van.ly_do,
     },
     {
       title: "Kỹ năng",
       content: raw.ky_nang.noi_dung,
-      improvements: [raw.ky_nang.de_xuat],
+      improvedContent: raw.ky_nang.noi_dung_cai_thien,
       reason: raw.ky_nang.ly_do
     }
   ];
@@ -175,17 +175,21 @@ export const geminiApi = {
     // Convert old format to new format
     const resumeText = Object.values(resumeContent).join('\n');
     const analysis = await analyzeResume(resumeText);
-    
+
+    // Create improved content object from analysis
+    const improvedContent: Record<string, string> = {};
+    analysis.sections.forEach(section => {
+      improvedContent[section.title] = section.improvedContent;
+    });
+
     return {
-      improvements: analysis.sections.flatMap(section => 
-        section.improvements.map(improvement => ({
-          section: section.title,
-          original: section.content.split('\n')[0] || '',
-          suggestion: improvement,
-          reason: 'Gợi ý cải thiện từ AI'
-        }))
-      ),
-      improvedContent: resumeContent // Return original for now
+      improvements: analysis.sections.map(section => ({
+        section: section.title,
+        original: section.content,
+        suggestion: section.improvedContent,
+        reason: section.reason
+      })),
+      improvedContent: improvedContent
     };
   },
   

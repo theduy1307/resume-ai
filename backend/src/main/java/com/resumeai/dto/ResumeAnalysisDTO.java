@@ -1,10 +1,6 @@
 package com.resumeai.dto;
 
-import java.util.List;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.resumeai.service.SingleOrArrayDeserializer;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 /**
  * DTO cho kết quả phân tích hồ sơ xin việc
@@ -62,23 +58,22 @@ public class ResumeAnalysisDTO {
  * DTO cho từng phần phân tích (kinh nghiệm, học vấn, kỹ năng)
  */
 class SectionAnalysisDTO {
-    
+
     @JsonProperty("noi_dung")
     private String noiDung;
-    
-    @JsonProperty("de_xuat")
-    @JsonDeserialize(using = SingleOrArrayDeserializer.class)
-    private List<String> deXuat;
-    
+
+    @JsonProperty("noi_dung_cai_thien")
+    private String noiDungCaiThien;
+
     @JsonProperty("ly_do")
     private String lyDo;
 
     // Constructors
     public SectionAnalysisDTO() {}
 
-    public SectionAnalysisDTO(String noiDung, List<String> deXuat, String lyDo) {
+    public SectionAnalysisDTO(String noiDung, String noiDungCaiThien, String lyDo) {
         this.noiDung = noiDung;
-        this.deXuat = deXuat;
+        this.noiDungCaiThien = noiDungCaiThien;
         this.lyDo = lyDo;
     }
 
@@ -91,12 +86,12 @@ class SectionAnalysisDTO {
         this.noiDung = noiDung;
     }
 
-    public List<String> getDeXuat() {
-        return deXuat;
+    public String getNoiDungCaiThien() {
+        return noiDungCaiThien;
     }
 
-    public void setDeXuat(List<String> deXuat) {
-        this.deXuat = deXuat;
+    public void setNoiDungCaiThien(String noiDungCaiThien) {
+        this.noiDungCaiThien = noiDungCaiThien;
     }
 
     public String getLyDo() {
