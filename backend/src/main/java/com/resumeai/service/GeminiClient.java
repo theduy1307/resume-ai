@@ -67,7 +67,7 @@ public class GeminiClient {
                 Hãy phân tích hồ sơ dựa trên MÔ TẢ CÔNG VIỆC và trích xuất các phần: "Kinh nghiệm làm việc", "Học vấn", và "Kỹ năng". 
                 Với mỗi phần, hãy:
                 1. Trích xuất và tóm tắt nội dung hiện tại từ hồ sơ
-                2. Đề xuất chỉnh sửa/bổ sung để nâng cao mức độ phù hợp với mô tả công việc
+                2. Đề xuất nội dung cụ thể mà bạn nghĩ là nên được bổ sung hoặc chỉnh sửa để cải thiện hồ sơ, đừng trình bày nội dung này với giọng điêu giống như một quan điểm của bạn, thay vào đó trình bày nó với giọng điệu như thể nó là một đoạn hồ sơ xin việc.
                 3. Giải thích lý do tại sao cần những đề xuất đó
 
                 Nếu phần nào bị thiếu, hãy ghi rõ "Không có thông tin" trong nội dung.
@@ -75,19 +75,19 @@ public class GeminiClient {
                 Trả kết quả theo định dạng JSON sau:
                 {
                   "kinh_nghiem_lam_viec": {
-                    "noi_dung": "...",
-                    "de_xuat": "...",
-                    "ly_do": "..."
+                    "noi_dung": string,
+                    "de_xuat": string[],
+                    "ly_do": string
                   },
                   "hoc_van": {
-                    "noi_dung": "...",
-                    "de_xuat": "...",
-                    "ly_do": "..."
+                    "noi_dung": string,
+                    "de_xuat": string[],
+                    "ly_do": string
                   },
                   "ky_nang": {
-                    "noi_dung": "...",
-                    "de_xuat": "...",
-                    "ly_do": "..."
+                    "noi_dung": string,
+                    "de_xuat": string[],
+                    "ly_do": string
                   }
                 }
                 """, rawResumeText, jobDescription);
@@ -104,7 +104,7 @@ public class GeminiClient {
                 Hãy phân tích đoạn văn này và trích xuất các phần: "Kinh nghiệm làm việc", "Học vấn", và "Kỹ năng". 
                 Với mỗi phần, hãy:
                 1. Trích xuất và tóm tắt nội dung hiện tại từ văn bản gốc
-                2. Đề xuất nội dung cụ thể nên bổ sung hoặc chỉnh sửa để cải thiện hồ sơ
+                2. Đề xuất nội dung cụ thể mà bạn nghĩ là nên được bổ sung hoặc chỉnh sửa để cải thiện hồ sơ, đừng trình bày nội dung này với giọng điêu giống như một quan điểm của bạn, thay vào đó trình bày nó với giọng điệu như thể nó là một đoạn hồ sơ xin việc.
                 3. Giải thích rõ ràng lý do tại sao cần có những đề xuất này
 
                 Nếu phần nào thiếu hoàn toàn, hãy ghi "Không có thông tin" trong noi_dung.
@@ -112,19 +112,19 @@ public class GeminiClient {
                 Trả kết quả theo định dạng JSON sau:
                 {
                   "kinh_nghiem_lam_viec": {
-                    "noi_dung": "...",
-                    "de_xuat": "...",
-                    "ly_do": "..."
+                    "noi_dung": string,
+                    "de_xuat": string[],
+                    "ly_do": string,
                   },
                   "hoc_van": {
-                    "noi_dung": "...",
-                    "de_xuat": "...",
-                    "ly_do": "..."
+                    "noi_dung": string,
+                    "de_xuat": string[],
+                    "ly_do": string,
                   },
                   "ky_nang": {
-                    "noi_dung": "...",
-                    "de_xuat": "...",
-                    "ly_do": "..."
+                    "noi_dung": string,
+                    "de_xuat": string[],
+                    "ly_do": string
                   }
                 }
                 """, rawResumeText);

@@ -13,6 +13,7 @@ interface ResumeAnalysis {
     title: string;
     content: string;
     improvements: string[];
+    reason: string,
   }>;
   extractedText?: string;
 }
@@ -71,7 +72,33 @@ export const analyzeResume = async (resumeText: string, jobDescription?: string)
   }
 
   const result = await response.json();
-  return result.data;
+  const raw = result.data;
+
+  const sections = [
+    {
+      title: "Kinh nghiệm làm việc",
+      content: raw.kinh_nghiem_lam_viec.noi_dung,
+      improvements: [raw.kinh_nghiem_lam_viec.de_xuat],
+      reason: raw.kinh_nghiem_lam_viec.ly_do,
+    },
+    {
+      title: "Học vấn",
+      content: raw.hoc_van.noi_dung,
+      improvements: [raw.hoc_van.de_xuat],
+      reason: raw.hoc_van.ly_do,
+    },
+    {
+      title: "Kỹ năng",
+      content: raw.ky_nang.noi_dung,
+      improvements: [raw.ky_nang.de_xuat],
+      reason: raw.ky_nang.ly_do
+    }
+  ];
+
+  return {
+    personalInfo: null, // hoặc null nếu không có
+    sections: sections,
+  };
 };
 
 // Function for job description analysis

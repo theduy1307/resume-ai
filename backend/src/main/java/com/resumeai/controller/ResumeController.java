@@ -79,7 +79,10 @@ public class ResumeController {
    public ResponseEntity<?> analyzeResumeText(@RequestBody Map<String, String> request) {
         try {
             String resumeText = request.get("text");
-            String jobDescription = request.getOrDefault("jobDescription", null);
+            String jobDescription = request.get("jobDescription");
+            if ("null".equalsIgnoreCase(jobDescription)) {
+                jobDescription = null;
+            }
 
             if (resumeText == null || resumeText.trim().isEmpty()) {
                 return ResponseEntity.badRequest()

@@ -125,11 +125,14 @@ const Upload = () => {
         const analyzedSections = analysis.sections.map((section, index) => ({
           id: `section-${index}`,
           title: section.title,
-          content: section.content
+          content: section.content,
+          improvements: section.improvements,
+          reason: section.reason,
         }));
         
         // Save analyzed data
         localStorage.setItem("resumeSectionsForEval", JSON.stringify(analyzedSections));
+
         if (analysis.personalInfo) {
           localStorage.setItem("personalInfo", JSON.stringify(analysis.personalInfo));
         }
