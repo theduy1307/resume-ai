@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Header from "@/components/Header";
 import InterviewQuestion from "@/components/InterviewQuestion";
 import InterviewSetupForm from "@/components/InterviewSetupForm";
-import { geminiApi, generateInterviewQuestionsFromBackend, submitInterviewAnswers } from "@/services/geminiApi";
+import { geminiApi, generateInterviewQuestionsFromBackend, submitInterviewAnswers, generateInterviewQuestionsFromResume } from "@/services/geminiApi";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Clock, Home, RotateCcw, Brain } from "lucide-react";
@@ -53,11 +53,11 @@ const MockInterview = () => {
   const [isEvaluating, setIsEvaluating] = useState(false);
 
   useEffect(() => {
-    // Check if resume data exists in localStorage
-    const resumeData = localStorage.getItem("resumeSections");
-    const hasResumeData = resumeData && JSON.parse(resumeData).length > 0;
+    // Check if resume text exists in localStorage
+    const resumeText = localStorage.getItem("extractedText");
+    const hasResumeData = resumeText && resumeText.trim().length > 0;
     setHasResume(hasResumeData);
-    
+
     if (hasResumeData) {
       // If resume exists, fetch questions based on resume
       fetchQuestionsFromResume();
@@ -72,34 +72,109 @@ const MockInterview = () => {
     setLoadingProgress(0);
     setLoadingMessage("Đang phân tích CV của bạn...");
 
+    let progressInterval: NodeJS.Timeout | null = null;
+
     try {
+      // Get resume text and job description from localStorage
+      const resumeText = localStorage.getItem("extractedText");
+      const jobDescription = localStorage.getItem("jobDescription");
+
+      if (!resumeText || resumeText.trim().length === 0) {
+        toast.error("Không tìm thấy nội dung CV. Vui lòng tải lên CV trước.");
+        setShowInterviewSetup(true);
+        return;
+      }
+
       // Simulate progress updates
-      const progressInterval = setInterval(() => {
+      progressInterval = setInterval(() => {
         setLoadingProgress(prev => {
           if (prev < 90) return prev + 10;
           return prev;
         });
       }, 200);
 
-      setLoadingMessage("Đang tạo câu hỏi phỏng vấn phù hợp...");
+      setLoadingMessage(jobDescription && jobDescription.trim().length > 0
+        ? "Đang tạo câu hỏi dựa trên CV và mô tả công việc..."
+        : "Đang tạo câu hỏi phỏng vấn phù hợp với CV...");
 
-      // Thêm delay tối thiểu để đảm bảo loading screen hiển thị
+      console.log("Calling generateInterviewQuestionsFromResume with:", {
+        resumeTextLength: resumeText.length,
+        hasJobDescription: !!(jobDescription && jobDescription.trim().length > 0)
+      });
+
+      // Use new API to generate questions from resume
       const [fetchedQuestions] = await Promise.all([
-        geminiApi.getInterviewQuestions("general"),
-        new Promise(resolve => setTimeout(resolve, 1500)) // Delay tối thiểu 1.5 giây
+        generateInterviewQuestionsFromResume(resumeText, jobDescription || undefined),
+        new Promise(resolve => setTimeout(resolve, 2000)) // Delay tối thiểu 2 giây
       ]);
 
-      clearInterval(progressInterval);
+      console.log("Received questions:", fetchedQuestions);
+
+      if (progressInterval) clearInterval(progressInterval);
       setLoadingProgress(100);
       setLoadingMessage("Hoàn thành!");
+
+      // Convert to expected format
+      const formattedQuestions = fetchedQuestions.map((q: any) => ({
+        question: q.questionText,
+        hint: q.hint
+      }));
 
       // Delay nhỏ để hiển thị 100%
       await new Promise(resolve => setTimeout(resolve, 300));
 
-      setQuestions(fetchedQuestions);
+      setQuestions(formattedQuestions);
+
+      // Set interview info based on CV analysis (for evaluation later)
+      setInterviewInfo({
+        position: "Vị trí phù hợp với CV",
+        field: "Lĩnh vực từ CV",
+        level: "Cấp độ từ CV"
+      });
+
     } catch (error) {
-      console.error("Error fetching questions:", error);
-      toast.error("Đã xảy ra lỗi khi tải câu hỏi phỏng vấn. Vui lòng thử lại.");
+      console.error("Error fetching questions from resume:", error);
+
+      // Clear interval if it exists
+      if (progressInterval) clearInterval(progressInterval);
+
+      // Provide more specific error messages
+      let errorMessage = "Đã xảy ra lỗi khi tạo câu hỏi từ CV.";
+      if (error instanceof Error) {
+        if (error.message.includes("fetch")) {
+          errorMessage = "Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.";
+        } else if (error.message.includes("timeout")) {
+          errorMessage = "Quá thời gian chờ. Vui lòng thử lại.";
+        } else if (error.message.includes("CV quá ngắn")) {
+          errorMessage = "Nội dung CV quá ngắn để tạo câu hỏi phỏng vấn.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      console.log("Falling back to generic questions due to error:", errorMessage);
+      toast.error(errorMessage + " Sử dụng câu hỏi chung thay thế.");
+
+      // Fallback: Use generic questions instead of failing completely
+      try {
+        const [fallbackQuestions] = await Promise.all([
+          geminiApi.getInterviewQuestions("general"),
+          new Promise(resolve => setTimeout(resolve, 1000))
+        ]);
+
+        setQuestions(fallbackQuestions);
+        setInterviewInfo({
+          position: "Vị trí chung",
+          field: "Công nghệ thông tin",
+          level: "Trung cấp"
+        });
+
+        toast.success("Đã tải câu hỏi phỏng vấn chung.");
+      } catch (fallbackError) {
+        console.error("Fallback also failed:", fallbackError);
+        toast.error("Không thể tải câu hỏi phỏng vấn. Vui lòng thử lại sau.");
+        setShowInterviewSetup(true);
+      }
     } finally {
       setIsLoading(false);
       setLoadingProgress(0);

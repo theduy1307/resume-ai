@@ -15,7 +15,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.ArrayList;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
+import com.google.gson.reflect.TypeToken;
+import com.resumeai.dto.InterviewQuestionDTO;
 
 @Service
 public class GeminiClient {
@@ -184,14 +188,153 @@ public class GeminiClient {
         }
     }
 
-    // public ResumeAnalysisDTO analyzeResumeToDTO(String rawResumeText) {
-    //     try {
-    //         JsonObject jsonResult = analyzeResume(rawResumeText);
-    //         return gson.fromJson(jsonResult, ResumeAnalysisDTO.class);
-    //     } catch (Exception e) {
-    //         throw new RuntimeException("Lỗi khi convert JsonObject sang DTO: " + e.getMessage(), e);
-    //     }
-    // }
+    public List<InterviewQuestionDTO> generateInterviewQuestionsFromResume(String resumeText, @Nullable String jobDescription) {
+        try {
+            logger.info("Starting interview questions generation from resume. Resume length: {}, Has job description: {}",
+                resumeText.length(), jobDescription != null);
 
+            // Create prompt for Gemini
+            String prompt = buildInterviewQuestionPromptFromResume(resumeText, jobDescription);
+            logger.debug("Generated prompt length: {}", prompt.length());
 
+            // Create schema for structured output (same as MockInterviewServiceImpl)
+            Schema questionSchema = createQuestionSchema();
+
+            // Create content for Gemini
+            List<Content> contents = List.of(
+                Content.builder()
+                    .parts(List.of(Part.fromText(prompt)))
+                    .build()
+            );
+
+            // Call Gemini API
+            logger.info("Calling Gemini API for interview questions generation");
+            GenerateContentResponse response = generateContent(contents, questionSchema);
+
+            // Extract JSON from response
+            String jsonResponse = response.text();
+            logger.debug("Raw response from Gemini: {}", jsonResponse);
+
+            // Parse JSON response into List<InterviewQuestionDTO>
+            java.lang.reflect.Type listType = new TypeToken<List<InterviewQuestionDTO>>(){}.getType();
+            List<InterviewQuestionDTO> questions = gson.fromJson(jsonResponse, listType);
+
+            logger.info("Successfully generated {} interview questions", questions != null ? questions.size() : 0);
+            return questions != null ? questions : new ArrayList<>();
+
+        } catch (Exception e) {
+            logger.error("Error generating interview questions from resume: {}", e.getMessage(), e);
+
+            // Provide more specific error messages
+            if (e.getMessage().contains("API key")) {
+                throw new RuntimeException("Lỗi xác thực API Gemini. Vui lòng kiểm tra cấu hình.", e);
+            } else if (e.getMessage().contains("timeout")) {
+                throw new RuntimeException("Timeout khi gọi API Gemini. Vui lòng thử lại.", e);
+            } else if (e.getMessage().contains("JSON")) {
+                throw new RuntimeException("Lỗi xử lý dữ liệu từ Gemini. Vui lòng thử lại.", e);
+            } else {
+                throw new RuntimeException("Lỗi khi tạo câu hỏi phỏng vấn từ CV: " + e.getMessage(), e);
+            }
+        }
+    }
+
+    private Schema createQuestionSchema() {
+        return Schema.builder()
+                .type(Type.Known.ARRAY)
+                .items(Schema.builder()
+                        .type(Type.Known.OBJECT)
+                        .properties(ImmutableMap.of(
+                                "questionId", Schema.builder().type(Type.Known.INTEGER).build(),
+                                "questionText", Schema.builder().type(Type.Known.STRING).build(),
+                                "hint", Schema.builder().type(Type.Known.STRING).build()
+                        ))
+                        .required(List.of("questionId", "questionText", "hint"))
+                        .build())
+                .build();
+    }
+
+    private String buildInterviewQuestionPromptFromResume(String resumeText, @Nullable String jobDescription) {
+        if (jobDescription != null && !jobDescription.trim().isEmpty()) {
+            // Case: CV + Job Description
+            return String.format("""
+                Bạn là một chuyên gia tuyển dụng và phỏng vấn kỹ thuật hàng đầu, có kinh nghiệm sâu sắc về các tiêu chuẩn nhân sự trong ngành.
+
+                **THÔNG TIN ỨNG VIÊN:**
+
+                **CV của ứng viên:**
+                ---
+                %s
+                ---
+
+                **Mô tả công việc:**
+                ---
+                %s
+                ---
+
+                **YÊU CẦU CHI TIẾT:**
+
+                1. **Phân tích CV và JD:** Dựa vào CV và mô tả công việc, hãy tạo ra 10 câu hỏi phỏng vấn để đánh giá chính xác mức độ phù hợp của ứng viên với vị trí này.
+
+                2. **Mục tiêu cốt lõi:** Các câu hỏi phải giúp đánh giá:
+                   - Kinh nghiệm và kỹ năng cụ thể từ CV có phù hợp với yêu cầu công việc không
+                   - Khả năng thực hiện các trách nhiệm trong JD
+                   - Động lực và sự hiểu biết về vị trí ứng tuyển
+
+                3. **Kết hợp câu hỏi (Tỷ lệ gợi ý: 40%% Technical, 40%% Behavioral, 20%% Situational):** Tập trung vào việc tạo ra câu hỏi thực tế, đánh giá đúng năng lực dựa trên CV và yêu cầu JD.
+
+                4. **Gợi ý trả lời (Hint):** Hint không được tiết lộ đáp án. Thay vào đó, hãy gợi ý cho ứng viên về *cách tiếp cận vấn đề* hoặc *cấu trúc một câu trả lời tốt* (ví dụ: 'Hãy trình bày theo mô hình STAR' hoặc 'Hãy cân nhắc các yếu tố về hiệu năng và khả năng mở rộng').
+
+                5. **Ngôn ngữ:** Câu hỏi bằng tiếng Việt, chuyên nghiệp, rõ ràng.
+
+                **ĐỊNH DẠNG ĐẦU RA:**
+
+                Hãy trả về kết quả theo định dạng JSON array như mẫu sau. **Tuyệt đối không thêm bất kỳ trường nào khác ngoài `questionId`, `questionText`, và `hint`.**
+                [
+                  {
+                    "questionId": 1,
+                    "questionText": "Câu hỏi phỏng vấn...",
+                    "hint": "Gợi ý trả lời..."
+                  }
+                ]
+                """, resumeText, jobDescription);
+        } else {
+            // Case: CV only
+            return String.format("""
+                Bạn là một chuyên gia tuyển dụng và phỏng vấn kỹ thuật hàng đầu, có kinh nghiệm sâu sắc về các tiêu chuẩn nhân sự trong ngành.
+
+                **THÔNG TIN ỨNG VIÊN:**
+
+                **CV của ứng viên:**
+                ---
+                %s
+                ---
+
+                **YÊU CẦU CHI TIẾT:**
+
+                1. **Phân tích CV:** Dựa vào CV này, hãy suy luận ra vị trí, lĩnh vực và cấp độ kinh nghiệm phù hợp của ứng viên, sau đó tạo ra 10 câu hỏi phỏng vấn phù hợp.
+
+                2. **Mục tiêu cốt lõi:** Các câu hỏi phải giúp đánh giá:
+                   - Kinh nghiệm và kỹ năng cụ thể từ CV
+                   - Khả năng và tiềm năng phát triển
+                   - Động lực và mục tiêu nghề nghiệp
+
+                3. **Kết hợp câu hỏi (Tỷ lệ gợi ý: 40%% Technical, 40%% Behavioral, 20%% Situational):** Tập trung vào việc tạo ra câu hỏi thực tế, đánh giá đúng năng lực dựa trên background của ứng viên.
+
+                4. **Gợi ý trả lời (Hint):** Hint không được tiết lộ đáp án. Thay vào đó, hãy gợi ý cho ứng viên về *cách tiếp cận vấn đề* hoặc *cấu trúc một câu trả lời tốt* (ví dụ: 'Hãy trình bày theo mô hình STAR' hoặc 'Hãy cân nhắc các yếu tố về hiệu năng và khả năng mở rộng').
+
+                5. **Ngôn ngữ:** Câu hỏi bằng tiếng Việt, chuyên nghiệp, rõ ràng.
+
+                **ĐỊNH DẠNG ĐẦU RA:**
+
+                Hãy trả về kết quả theo định dạng JSON array như mẫu sau. **Tuyệt đối không thêm bất kỳ trường nào khác ngoài `questionId`, `questionText`, và `hint`.**
+                [
+                  {
+                    "questionId": 1,
+                    "questionText": "Câu hỏi phỏng vấn...",
+                    "hint": "Gợi ý trả lời..."
+                  }
+                ]
+                """, resumeText);
+        }
+    }
 }

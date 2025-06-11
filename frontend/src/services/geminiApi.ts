@@ -285,3 +285,29 @@ export const submitInterviewAnswers = async (
 
   return await response.json();
 };
+
+// New function to generate interview questions from resume text
+export const generateInterviewQuestionsFromResume = async (resumeText: string, jobDescription?: string) => {
+  const response = await fetch(`${API_BASE_URL}/resume/generate-interview-questions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      resumeText,
+      jobDescription: jobDescription || null
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Lỗi tạo câu hỏi phỏng vấn từ CV');
+  }
+
+  const result = await response.json();
+  return result.data.map((q: any) => ({
+    questionId: q.questionId,
+    questionText: q.questionText,
+    hint: q.hint
+  }));
+};

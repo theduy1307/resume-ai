@@ -2,6 +2,7 @@ package com.resumeai.controller;
 
 import com.resumeai.model.ResumeData;
 import com.resumeai.dto.ResumeAnalysisDTO;
+import com.resumeai.dto.InterviewQuestionDTO;
 import com.resumeai.model.InterviewQuestion;
 import com.resumeai.model.JobMatchResult;
 import com.resumeai.service.DocumentParserService;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -131,6 +133,48 @@ public class ResumeController {
             logger.error("Error analyzing resume: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Lỗi phân tích CV: " + e.getMessage()));
+        }
+   }
+
+   @PostMapping("/generate-interview-questions")
+   public ResponseEntity<?> generateInterviewQuestions(@RequestBody Map<String, String> request) {
+        try {
+            logger.info("Received interview questions generation request");
+
+            String resumeText = request.get("resumeText");
+            String jobDescription = request.get("jobDescription");
+
+            if (resumeText == null || resumeText.trim().isEmpty()) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Text CV không được để trống"));
+            }
+
+            // Validate resume text length
+            if (resumeText.trim().length() < 50) {
+                return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Nội dung CV quá ngắn để tạo câu hỏi phỏng vấn."));
+            }
+
+            logger.info("Generating interview questions from resume. Resume length: {}, Has JD: {}",
+                resumeText.length(), jobDescription != null && !jobDescription.trim().isEmpty());
+
+            // Generate questions using Gemini
+            logger.debug("Calling geminiService.generateInterviewQuestionsFromResume");
+            List<InterviewQuestionDTO> questions = geminiService.generateInterviewQuestionsFromResume(resumeText, jobDescription);
+            logger.debug("Received {} questions from Gemini service", questions != null ? questions.size() : 0);
+
+            logger.info("Successfully generated {} interview questions", questions.size());
+
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Tạo câu hỏi phỏng vấn thành công",
+                "data", questions
+            ));
+
+        } catch (Exception e) {
+            logger.error("Error generating interview questions: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Lỗi tạo câu hỏi phỏng vấn: " + e.getMessage()));
         }
    }
 
