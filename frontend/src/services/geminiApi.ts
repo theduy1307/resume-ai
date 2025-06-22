@@ -13,8 +13,10 @@ interface ResumeAnalysis {
     title: string;
     content: string;
     improvedContent: string;
-    reason: string,
+    reason: string;
+    passRate: string;
   }>;
+  summary: string;
   extractedText?: string;
 }
 
@@ -32,7 +34,9 @@ interface JobMatchResult {
 }
 
 // Function to extract text from uploaded file (no Gemini analysis)
-export const extractTextFromFile = async (file: File): Promise<{extractedText: string, filename: string}> => {
+export const extractTextFromFile = async (
+  file: File
+): Promise<{ extractedText: string; filename: string }> => {
   const formData = new FormData();
   formData.append('file', file);
 
@@ -49,20 +53,23 @@ export const extractTextFromFile = async (file: File): Promise<{extractedText: s
   const result = await response.json();
   return {
     extractedText: result.extractedText,
-    filename: result.filename
+    filename: result.filename,
   };
 };
 
 // Function to analyze resume from text
-export const analyzeResume = async (resumeText: string, jobDescription?: string): Promise<ResumeAnalysis> => {
+export const analyzeResume = async (
+  resumeText: string,
+  jobDescription?: string
+): Promise<ResumeAnalysis> => {
   const response = await fetch(`${API_BASE_URL}/resume/analyze-text`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ 
-      text: resumeText, 
-      jobDescription: jobDescription ?? null, 
+    body: JSON.stringify({
+      text: resumeText,
+      jobDescription: jobDescription ?? null,
     }),
   });
 
@@ -76,41 +83,48 @@ export const analyzeResume = async (resumeText: string, jobDescription?: string)
 
   const sections = [
     {
-      title: "Kinh nghiệm làm việc",
+      title: 'Kinh nghiệm làm việc',
       content: raw.kinh_nghiem_lam_viec.noi_dung,
       improvedContent: raw.kinh_nghiem_lam_viec.noi_dung_cai_thien,
       reason: raw.kinh_nghiem_lam_viec.ly_do,
+      passRate: raw.kinh_nghiem_lam_viec.phu_hop,
     },
     {
-      title: "Học vấn",
+      title: 'Học vấn',
       content: raw.hoc_van.noi_dung,
       improvedContent: raw.hoc_van.noi_dung_cai_thien,
       reason: raw.hoc_van.ly_do,
+      passRate: raw.kinh_nghiem_lam_viec.phu_hop,
     },
     {
-      title: "Kỹ năng",
+      title: 'Kỹ năng',
       content: raw.ky_nang.noi_dung,
       improvedContent: raw.ky_nang.noi_dung_cai_thien,
-      reason: raw.ky_nang.ly_do
-    }
+      reason: raw.ky_nang.ly_do,
+      passRate: raw.kinh_nghiem_lam_viec.phu_hop,
+    },
   ];
 
   return {
     personalInfo: null, // hoặc null nếu không có
     sections: sections,
+    summary: raw.phu_hop,
   };
 };
 
 // Function for job description analysis
-export const analyzeJobDescription = async (jobDescription: string, resumeText: string): Promise<{ score: number; analysis: string }> => {
+export const analyzeJobDescription = async (
+  jobDescription: string,
+  resumeText: string
+): Promise<{ score: number; analysis: string }> => {
   const response = await fetch(`${API_BASE_URL}/resume/job-match`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ 
-      jobDescription, 
-      resumeText 
+    body: JSON.stringify({
+      jobDescription,
+      resumeText,
     }),
   });
 
@@ -121,10 +135,12 @@ export const analyzeJobDescription = async (jobDescription: string, resumeText: 
 
   const result = await response.json();
   const data: JobMatchResult = result.data;
-  
+
   return {
     score: data.score,
-    analysis: `Dựa trên phân tích AI, CV của bạn phù hợp ${data.score.toFixed(1)}% với yêu cầu công việc.
+    analysis: `Dựa trên phân tích AI, CV của bạn phù hợp ${data.score.toFixed(
+      1
+    )}% với yêu cầu công việc.
     
 ${data.analysis}
 
@@ -132,20 +148,23 @@ ${data.analysis}
 ${data.strengths}
 
 Cần cải thiện:
-${data.improvements}`
+${data.improvements}`,
   };
 };
 
 // Function to generate interview questions
-export const generateInterviewQuestions = async (jobDescription?: string, resumeText?: string): Promise<InterviewQuestion[]> => {
+export const generateInterviewQuestions = async (
+  jobDescription?: string,
+  resumeText?: string
+): Promise<InterviewQuestion[]> => {
   const response = await fetch(`${API_BASE_URL}/resume/interview-questions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ 
-      jobDescription: jobDescription || '', 
-      resumeText: resumeText || '' 
+    body: JSON.stringify({
+      jobDescription: jobDescription || '',
+      resumeText: resumeText || '',
     }),
   });
 
@@ -178,62 +197,69 @@ export const geminiApi = {
 
     // Create improved content object from analysis
     const improvedContent: Record<string, string> = {};
-    analysis.sections.forEach(section => {
+    analysis.sections.forEach((section) => {
       improvedContent[section.title] = section.improvedContent;
     });
 
     return {
-      improvements: analysis.sections.map(section => ({
+      improvements: analysis.sections.map((section) => ({
         section: section.title,
         original: section.content,
         suggestion: section.improvedContent,
-        reason: section.reason
+        reason: section.reason,
       })),
-      improvedContent: improvedContent
+      improvedContent: improvedContent,
     };
   },
-  
-  analyzeJobDescription: async (resumeContent: Record<string, string>, jobDescription: string) => {
+
+  analyzeJobDescription: async (
+    resumeContent: Record<string, string>,
+    jobDescription: string
+  ) => {
     const resumeText = Object.values(resumeContent).join('\n');
     const result = await analyzeJobDescription(jobDescription, resumeText);
-    
+
     return {
       matches: [
         { skill: 'React', confidence: 0.9 },
-        { skill: 'JavaScript', confidence: 0.95 }
+        { skill: 'JavaScript', confidence: 0.95 },
       ],
       gaps: [
-        { 
-          skill: 'GraphQL', 
+        {
+          skill: 'GraphQL',
           importance: 'high' as const,
-          suggestion: 'Cần học thêm GraphQL để phù hợp hơn với công việc.'
-        }
+          suggestion: 'Cần học thêm GraphQL để phù hợp hơn với công việc.',
+        },
       ],
-      overallMatch: result.score / 100
+      overallMatch: result.score / 100,
     };
   },
-  
+
   getInterviewQuestions: async (jobType: string) => {
     const questions = await generateInterviewQuestions(jobType);
-    
-    return questions.map(q => ({
+
+    return questions.map((q) => ({
       question: q.question,
-      hint: 'Hãy trả lời một cách tự tin và cụ thể.'
+      hint: 'Hãy trả lời một cách tự tin và cụ thể.',
     }));
   },
-  
+
   evaluateAnswer: async (question: string, answer: string) => {
     // Mock evaluation for now
     return {
       evaluation: 'Câu trả lời tốt, có thể cải thiện thêm.',
       improvementPoints: ['Thêm ví dụ cụ thể', 'Sử dụng số liệu để minh họa'],
-      score: Math.min(answer.length / 100, 1) * 100
+      score: Math.min(answer.length / 100, 1) * 100,
     };
-  }
+  },
 };
 
 // New function to generate interview questions from backend
-export const generateInterviewQuestionsFromBackend = async (position: string, field: string, level: string) => {
+export const generateInterviewQuestionsFromBackend = async (
+  position: string,
+  field: string,
+  level: string
+) => {
   const response = await fetch(`${API_BASE_URL}/mock-interview/questions`, {
     method: 'POST',
     headers: {
@@ -242,7 +268,7 @@ export const generateInterviewQuestionsFromBackend = async (position: string, fi
     body: JSON.stringify({
       position,
       field,
-      level
+      level,
     }),
   });
 
@@ -254,7 +280,7 @@ export const generateInterviewQuestionsFromBackend = async (position: string, fi
   const result = await response.json();
   return result.map((q: any) => ({
     question: q.questionText,
-    hint: q.hint
+    hint: q.hint,
   }));
 };
 
@@ -263,7 +289,11 @@ export const submitInterviewAnswers = async (
   position: string,
   field: string,
   level: string,
-  answers: Array<{questionId: number, questionText: string, answerText: string}>
+  answers: Array<{
+    questionId: number;
+    questionText: string;
+    answerText: string;
+  }>
 ) => {
   const response = await fetch(`${API_BASE_URL}/mock-interview/submit`, {
     method: 'POST',
@@ -274,7 +304,7 @@ export const submitInterviewAnswers = async (
       position,
       field,
       level,
-      answers
+      answers,
     }),
   });
 
@@ -287,17 +317,23 @@ export const submitInterviewAnswers = async (
 };
 
 // New function to generate interview questions from resume text
-export const generateInterviewQuestionsFromResume = async (resumeText: string, jobDescription?: string) => {
-  const response = await fetch(`${API_BASE_URL}/resume/generate-interview-questions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      resumeText,
-      jobDescription: jobDescription || null
-    }),
-  });
+export const generateInterviewQuestionsFromResume = async (
+  resumeText: string,
+  jobDescription?: string
+) => {
+  const response = await fetch(
+    `${API_BASE_URL}/resume/generate-interview-questions`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        resumeText,
+        jobDescription: jobDescription || null,
+      }),
+    }
+  );
 
   if (!response.ok) {
     const error = await response.json();
@@ -308,6 +344,6 @@ export const generateInterviewQuestionsFromResume = async (resumeText: string, j
   return result.data.map((q: any) => ({
     questionId: q.questionId,
     questionText: q.questionText,
-    hint: q.hint
+    hint: q.hint,
   }));
 };

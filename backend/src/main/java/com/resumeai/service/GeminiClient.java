@@ -79,7 +79,7 @@ public class GeminiClient {
                 1. Trích xuất và tóm tắt nội dung hiện tại từ hồ sơ (noi_dung)
                 2. Viết lại nội dung đã được cải thiện hoàn chỉnh, phù hợp với mô tả công việc. Nội dung này phải được viết như một phần hoàn chỉnh của CV, không phải dạng gợi ý hay nhận xét. QUAN TRỌNG: Sử dụng cùng ngôn ngữ với CV gốc (noi_dung_cai_thien)
                 3. Giải thích lý do tại sao cần cải thiện và những thay đổi đã được thực hiện (ly_do)
-
+                4. So sánh văn bản hồ sơ xin việc và mô tả công việc cho ra số phần trăm tỉ lệ hồ sơ phù hợp (phu_hop)
                 Nếu phần nào bị thiếu trong hồ sơ gốc, hãy ghi "Không có thông tin" trong noi_dung và tạo nội dung mẫu phù hợp với mô tả công việc trong noi_dung_cai_thien. Nội dung mẫu phải sử dụng cùng ngôn ngữ với phần còn lại của CV.
 
                 Trả kết quả theo định dạng JSON sau:
@@ -87,18 +87,22 @@ public class GeminiClient {
                   "kinh_nghiem_lam_viec": {
                     "noi_dung": string,
                     "noi_dung_cai_thien": string,
-                    "ly_do": string
+                    "ly_do": string,
+                    "phu_hop": string
                   },
                   "hoc_van": {
                     "noi_dung": string,
                     "noi_dung_cai_thien": string,
-                    "ly_do": string
+                    "ly_do": string,
+                    "phu_hop": string
                   },
                   "ky_nang": {
                     "noi_dung": string,
                     "noi_dung_cai_thien": string,
-                    "ly_do": string
-                  }
+                    "ly_do": string,
+                    "phu_hop": string
+                  },
+                  "phu_hop": string
                 }
                 """, rawResumeText, jobDescription);
         } else {
@@ -118,6 +122,7 @@ public class GeminiClient {
                 1. Trích xuất và tóm tắt nội dung hiện tại từ văn bản gốc (noi_dung)
                 2. Viết lại nội dung đã được cải thiện hoàn chỉnh với ngôn từ chuyên nghiệp, rõ ràng và có tác động mạnh hơn. Nội dung này phải được viết như một phần hoàn chỉnh của CV, không phải dạng gợi ý hay nhận xét. QUAN TRỌNG: Sử dụng cùng ngôn ngữ với CV gốc (noi_dung_cai_thien)
                 3. Giải thích rõ ràng lý do tại sao cần cải thiện và những thay đổi đã được thực hiện (ly_do)
+                4. So sánh văn bản hồ sơ xin việc và mô tả công việc cho ra số phần trăm tỉ lệ hồ sơ phù hợp (phu_hop)
 
                 Nếu phần nào thiếu hoàn toàn trong hồ sơ gốc, hãy ghi "Không có thông tin" trong noi_dung và tạo nội dung mẫu chuyên nghiệp trong noi_dung_cai_thien. Nội dung mẫu phải sử dụng cùng ngôn ngữ với phần còn lại của CV.
 
@@ -126,18 +131,22 @@ public class GeminiClient {
                   "kinh_nghiem_lam_viec": {
                     "noi_dung": string,
                     "noi_dung_cai_thien": string,
-                    "ly_do": string
+                    "ly_do": string,
+                    "phu_hop": string
                   },
                   "hoc_van": {
                     "noi_dung": string,
                     "noi_dung_cai_thien": string,
-                    "ly_do": string
+                    "ly_do": string,
+                    "phu_hop": string
                   },
                   "ky_nang": {
                     "noi_dung": string,
                     "noi_dung_cai_thien": string,
-                    "ly_do": string
-                  }
+                    "ly_do": string,
+                    "phu_hop": string
+                  },
+                  "phu_hop": string
                 }
                 """, rawResumeText);
         }

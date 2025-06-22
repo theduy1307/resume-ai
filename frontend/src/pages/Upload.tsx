@@ -47,14 +47,14 @@ const Upload = () => {
     setUploading(true);
     try {
       setResumeFile(file);
-      
+
       // Only extract text, don't analyze with Gemini yet
       const result = await extractTextFromFile(file);
-      
+
       setExtractedText(result.extractedText);
       setCurrentFilename(result.filename);
       setShowTextDialog(true);
-      
+
       toast.success("Đã trích xuất text từ file thành công");
     } catch (error) {
       console.error("Error extracting text:", error);
@@ -69,7 +69,7 @@ const Upload = () => {
     try {
       // Store confirmed text for later use
       localStorage.setItem("extractedText", confirmedText);
-      
+
       // Create mock sections for display (actual analysis will happen when user clicks evaluate)
       const mockSections = [
         {
@@ -78,7 +78,7 @@ const Upload = () => {
           content: confirmedText.substring(0, 200) + (confirmedText.length > 200 ? "..." : "")
         }
       ];
-      
+
       setResumeSections(mockSections);
       toast.success("Đã xác nhận nội dung CV thành công");
     } catch (error) {
@@ -183,6 +183,9 @@ const Upload = () => {
         if (analysis.personalInfo) {
           localStorage.setItem("personalInfo", JSON.stringify(analysis.personalInfo));
         }
+        if (analysis.summary) {
+          localStorage.setItem("summary", analysis.summary);
+        }
       } else {
         // Use existing sections
         localStorage.setItem("resumeSectionsForEval", JSON.stringify(resumeSections));
@@ -228,7 +231,7 @@ const Upload = () => {
     if (resumeSections.length > 0) {
       localStorage.setItem("resumeSectionsForInterview", JSON.stringify(resumeSections));
     }
-    
+
     // Navigate to mock interview page
     navigate("/mock-interview");
   };
@@ -280,129 +283,129 @@ const Upload = () => {
       ) : (
         <main className="flex-1 container max-w-5xl mx-auto px-4 py-8 pt-24">
           <h1 className="text-3xl font-bold mb-8 text-center">Tải lên hồ sơ của bạn</h1>
-        
-        <div className="grid md:grid-cols-2 gap-8 mb-8">
-          {/* Resume Upload Section */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Hồ sơ của bạn</h2>
-              {resumeSections.length > 0 && (
-                <Button 
-                  onClick={handleClearResume}
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-2 text-red-600 hover:text-red-700"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Xóa CV
-                </Button>
-              )}
-            </div>
-            
-            {uploading ? (
-              <div className="upload-container flex flex-col items-center justify-center py-12">
-                <Loader2 className="mx-auto h-12 w-12 text-blue-600 animate-spin" />
-                <div className="mt-4 text-xl font-medium">Đang phân tích CV...</div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Vui lòng chờ trong giây lát
-                </p>
+
+          <div className="grid md:grid-cols-2 gap-8 mb-8">
+            {/* Resume Upload Section */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">Hồ sơ của bạn</h2>
+                {resumeSections.length > 0 && (
+                  <Button
+                    onClick={handleClearResume}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Xóa CV
+                  </Button>
+                )}
               </div>
-            ) : (
-              <FileUpload
-                acceptedTypes=".pdf,.doc,.docx"
-                onFileUpload={handleFileUpload}
-                label="Tải lên CV của bạn"
-              />
-            )}
-            
-            {resumeSections.length > 0 && (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-green-800 font-medium">✓ CV đã được tải lên thành công</p>
-                <p className="text-green-600 text-sm mt-1">
-                  Đã phân tích {resumeSections.length} phần từ CV của bạn
-                </p>
-              </div>
-            )}
-          </div>
-          
-          {/* Job Description Section */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Mô tả công việc (tùy chọn)</h2>
-              {(jobDescriptionFile || jobDescriptionText) && (
-                <Button 
-                  onClick={handleClearJobDescription}
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-2 text-red-600 hover:text-red-700"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Xóa JD
-                </Button>
-              )}
-            </div>
-            
-            <Tabs defaultValue="upload">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="upload">Tải lên JD</TabsTrigger>
-                <TabsTrigger value="paste">Dán văn bản</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="upload" className="mt-4">
+
+              {uploading ? (
+                <div className="upload-container flex flex-col items-center justify-center py-12">
+                  <Loader2 className="mx-auto h-12 w-12 text-blue-600 animate-spin" />
+                  <div className="mt-4 text-xl font-medium">Đang phân tích CV...</div>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Vui lòng chờ trong giây lát
+                  </p>
+                </div>
+              ) : (
                 <FileUpload
                   acceptedTypes=".pdf,.doc,.docx"
-                  onFileUpload={handleJobDescriptionFileUpload}
-                  label="Tải lên mô tả công việc"
+                  onFileUpload={handleFileUpload}
+                  label="Tải lên CV của bạn"
                 />
-              </TabsContent>
-              
-              <TabsContent value="paste" className="mt-4">
-                <Textarea
-                  placeholder="Dán mô tả công việc vào đây..."
-                  className="min-h-[300px]"
-                  value={jobDescriptionText}
-                  onChange={(e) => {
-                    setJobDescriptionText(e.target.value);
-                    // Save to localStorage immediately
-                    localStorage.setItem("jobDescription", e.target.value);
-                  }}
-                />
-              </TabsContent>
-            </Tabs>
+              )}
 
-            {jobDescriptionText && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-blue-800 font-medium">✓ Mô tả công việc đã được lưu</p>
-                <p className="text-blue-600 text-sm mt-1">
-                  Độ dài: {jobDescriptionText.length} ký tự
-                </p>
+              {resumeSections.length > 0 && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-green-800 font-medium">✓ CV đã được tải lên thành công</p>
+                  <p className="text-green-600 text-sm mt-1">
+                    Đã phân tích {resumeSections.length} phần từ CV của bạn
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Job Description Section */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">Mô tả công việc (tùy chọn)</h2>
+                {(jobDescriptionFile || jobDescriptionText) && (
+                  <Button
+                    onClick={handleClearJobDescription}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Xóa JD
+                  </Button>
+                )}
               </div>
-            )}
-          </div>
-        </div>
-        
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mt-12">
-          <Button
-            onClick={handleEvaluate}
-            size="lg"
-            className="gap-2"
-            disabled={isAnalyzing || uploading}
-          >
-            <span>Đánh giá hồ sơ</span>
-            <ArrowRight className="h-4 w-4" />
-          </Button>
 
-          <Button
-            onClick={handleStartMockInterview}
-            variant="outline"
-            size="lg"
-            className="gap-2"
-            disabled={isAnalyzing || uploading}
-          >
-            <MessageSquare className="h-4 w-4" />
-            <span>Bắt đầu phỏng vấn thử</span>
-          </Button>
-        </div>
+              <Tabs defaultValue="upload">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="upload">Tải lên JD</TabsTrigger>
+                  <TabsTrigger value="paste">Dán văn bản</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="upload" className="mt-4">
+                  <FileUpload
+                    acceptedTypes=".pdf,.doc,.docx"
+                    onFileUpload={handleJobDescriptionFileUpload}
+                    label="Tải lên mô tả công việc"
+                  />
+                </TabsContent>
+
+                <TabsContent value="paste" className="mt-4">
+                  <Textarea
+                    placeholder="Dán mô tả công việc vào đây..."
+                    className="min-h-[300px]"
+                    value={jobDescriptionText}
+                    onChange={(e) => {
+                      setJobDescriptionText(e.target.value);
+                      // Save to localStorage immediately
+                      localStorage.setItem("jobDescription", e.target.value);
+                    }}
+                  />
+                </TabsContent>
+              </Tabs>
+
+              {jobDescriptionText && (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-blue-800 font-medium">✓ Mô tả công việc đã được lưu</p>
+                  <p className="text-blue-600 text-sm mt-1">
+                    Độ dài: {jobDescriptionText.length} ký tự
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-12">
+            <Button
+              onClick={handleEvaluate}
+              size="lg"
+              className="gap-2"
+              disabled={isAnalyzing || uploading}
+            >
+              <span>Đánh giá hồ sơ</span>
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+
+            <Button
+              onClick={handleStartMockInterview}
+              variant="outline"
+              size="lg"
+              className="gap-2"
+              disabled={isAnalyzing || uploading}
+            >
+              <MessageSquare className="h-4 w-4" />
+              <span>Bắt đầu phỏng vấn thử</span>
+            </Button>
+          </div>
 
           {resumeSections.length === 0 && (
             <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">

@@ -17,10 +17,14 @@ interface AnalysisSection {
 const Evaluation = () => {
   const navigate = useNavigate();
   const [analysisData, setAnalysisData] = useState<AnalysisSection[]>([]);
+  const [summary, setSummary] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
     // Check if analyzed data exists in localStorage
     const analyzedData = localStorage.getItem("resumeSectionsForEval");
+    const summaryFromLocalStorage = localStorage.getItem("summary") || "0%";
+    const numberValue = parseFloat(summaryFromLocalStorage.replace("%", ""));
+    setSummary(numberValue)
     if (!analyzedData) {
       toast.error("Không tìm thấy dữ liệu phân tích. Vui lòng quay lại trang tải lên và thực hiện đánh giá.");
       navigate("/upload");
@@ -34,7 +38,8 @@ const Evaluation = () => {
         title: section.title,
         content: section.content,
         improvedContent: section.improvements, // This comes from the analyzed data
-        reason: section.reason
+        reason: section.reason,
+        passRate: section.passRate
       }));
 
       setAnalysisData(analysisData);
@@ -105,7 +110,20 @@ const Evaluation = () => {
                 </div>
               </div>
             </div>
-
+            <div className="grid md:grid-cols-1 gap-8 mt-10">
+              <Card className="mb-4">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Mức độ phù hợp</CardTitle>
+                </CardHeader>
+                <CardContent className="w-full flex flex-col items-center space-y-4">
+                  <span >{`${summary}%`}</span>
+                  <Progress
+                    value={summary}
+                    className="w-full h-3"
+                  />
+                </CardContent>
+              </Card>
+            </div>
             <div className="flex justify-center mt-8">
               <Button onClick={() => navigate("/")} className="gap-2">
                 <Home className="h-4 w-4" />

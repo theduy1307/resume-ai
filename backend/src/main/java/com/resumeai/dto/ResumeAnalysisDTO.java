@@ -16,16 +16,21 @@ public class ResumeAnalysisDTO {
     @JsonProperty("ky_nang")
     private SectionAnalysisDTO kyNang;
 
+    @JsonProperty("phu_hop")
+    private String phuHop;
+
     // Constructors
     public ResumeAnalysisDTO() {}
 
     public ResumeAnalysisDTO(
         SectionAnalysisDTO kinhNghiemLamViec, 
         SectionAnalysisDTO hocVan, 
-        SectionAnalysisDTO kyNang) {
+        SectionAnalysisDTO kyNang, 
+        String phuHop) {
         this.kinhNghiemLamViec = kinhNghiemLamViec;
         this.hocVan = hocVan;
         this.kyNang = kyNang;
+        this.phuHop = phuHop;
     }
 
     // Getters and Setters
@@ -52,6 +57,14 @@ public class ResumeAnalysisDTO {
     public void setKyNang(SectionAnalysisDTO kyNang) {
         this.kyNang = kyNang;
     }
+
+    public String getPhuHop() {
+        return phuHop;
+    }
+
+    public void setPhuHop(String phuHop) {
+        this.phuHop = phuHop;
+    }
 }
 
 /**
@@ -67,6 +80,9 @@ class SectionAnalysisDTO {
 
     @JsonProperty("ly_do")
     private String lyDo;
+
+    @JsonProperty("phu_hop")
+    private String phuHop;
 
     // Constructors
     public SectionAnalysisDTO() {}
@@ -100,5 +116,13 @@ class SectionAnalysisDTO {
 
     public void setLyDo(String lyDo) {
         this.lyDo = lyDo;
+    }
+
+    public String getPhuHop() {
+        return phuHop;
+    }
+
+    public void setPhuHop(String phuHop) {
+        this.phuHop = phuHop;
     }
 }
